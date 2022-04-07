@@ -6,6 +6,10 @@ from Communication.broadcast_host_ip import HostIp, BroadcastIpUDP
 import threading
 import crc8
 from Communication.general import msg_parser, msg_builder, check_header, get_msg_len
+from Communication.messages import msg_dictionary, MSG_HOST_IN_DEBUG
+from Experiment.experiment import experiment_handler, sequence_handler
+from Robot import data
+from params import HEADER_SIZE
 
 
 class HostServer:
@@ -94,13 +98,13 @@ class HostServer:
 
             # this connects the signals of the socket to the respective functions
             if client_index == 0:
-                self.client_list[client_index].readyRead.connect(self.read_buffer(client_index))
-                self.client_list[client_index].error.connect(self.close_socket(client_index))
+                #self.client_list[client_index].readyRead.connect(self.read_buffer(client_index))
+                #self.client_list[client_index].error.connect(self.close_socket(client_index))
 
-                #self.client_list[client_index].readyRead.connect(self.read_buffer_0)
+                self.client_list[client_index].readyRead.connect(self.read_buffer_0)
 
                 # self.client_list[client_index].disconnected.connect(self.close_socket_0)  # disconnected == error
-                #self.client_list[client_index].error.connect(self.close_socket_0)
+                self.client_list[client_index].error.connect(self.close_socket_0)
             elif client_index == 1:
                 self.client_list[client_index].readyRead.connect(self.read_buffer_1)
                 # self.client_list[client_index].disconnected.connect(self.close_socket_1)  # disconnected == error
@@ -184,7 +188,7 @@ class HostServer:
         self.crc_check(client_index, msg)
 
 
-"""
+
     def close_socket_0(self):
         i = 0
         self.close_socket(i)
@@ -224,8 +228,7 @@ class HostServer:
     def close_socket_9(self):
         i = 9
         self.close_socket(i)
-"""
-"""
+
     def close_socket(self, client_index):
         # (1) handle client connection
         self.client_list[client_index].close()
@@ -235,8 +238,6 @@ class HostServer:
         print("Client socket", client_index, "closed and removed from the list!")
         self.server.resumeAccepting()
 
-"""
-""" 
     def read_buffer_0(self):
         i = 0
         self.read_buffer(i)
@@ -321,7 +322,7 @@ class HostServer:
                 self.write_message_to_terminals(client_index, "Received message with unknown message id!", "R")
         else:
             self.write_message_to_terminals(client_index, "Received corrupted message!", "R")
-"""
+
 
 if __name__ == "__main__":
     Host = HostServer()

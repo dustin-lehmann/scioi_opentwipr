@@ -1,3 +1,4 @@
+from Experiment.experiment import sequence_handler, experiment_handler
 from Ui.general import TerminalLineEdit
 
 #PyQt
@@ -42,66 +43,6 @@ class Command_Ui:
         self.centralwidget = QtWidgets.QWidget(self.main_window)
         self.centralwidget.setObjectName("centralwidget")
 
-        # gb1
-        self.gb1 = QtWidgets.QGroupBox(self.centralwidget)
-        self.gb1.setGeometry(QtCore.QRect(10, 10, 731, 471))
-        palette = QtGui.QPalette()
-        brush = QtGui.QBrush(QtGui.QColor(255, 255, 255))
-        brush.setStyle(QtCore.Qt.SolidPattern)
-        palette.setBrush(QtGui.QPalette.Active, QtGui.QPalette.Base, brush)
-        brush = QtGui.QBrush(QtGui.QColor(236, 236, 236))
-        brush.setStyle(QtCore.Qt.SolidPattern)
-        palette.setBrush(QtGui.QPalette.Active, QtGui.QPalette.Window, brush)
-        brush = QtGui.QBrush(QtGui.QColor(255, 255, 255))
-        brush.setStyle(QtCore.Qt.SolidPattern)
-        palette.setBrush(QtGui.QPalette.Inactive, QtGui.QPalette.Base, brush)
-        brush = QtGui.QBrush(QtGui.QColor(236, 236, 236))
-        brush.setStyle(QtCore.Qt.SolidPattern)
-        palette.setBrush(QtGui.QPalette.Inactive, QtGui.QPalette.Window, brush)
-        brush = QtGui.QBrush(QtGui.QColor(236, 236, 236))
-        brush.setStyle(QtCore.Qt.SolidPattern)
-        palette.setBrush(QtGui.QPalette.Disabled, QtGui.QPalette.Base, brush)
-        brush = QtGui.QBrush(QtGui.QColor(236, 236, 236))
-        brush.setStyle(QtCore.Qt.SolidPattern)
-        palette.setBrush(QtGui.QPalette.Disabled, QtGui.QPalette.Window, brush)
-        self.gb1.setPalette(palette)
-        self.gb1.setObjectName("gb1")
-
-        # adding the robot map using matplotlib and blit method for high performance
-        self.gb1_figure = plt.figure(tight_layout=True)
-        self.gb1_canvas = FigureCanvas(self.gb1_figure)
-        self.gb1_toolbar = NavigationToolbar(self.gb1_canvas, self.main_window)
-        self.gb1_but = QtWidgets.QPushButton("Stop")
-        self.gb1_but.setObjectName("gb1_but")
-        self.gb1_but.setStyleSheet("background-color : rgb(240, 240, 240)")
-        # stop/start flag
-        self.gb1_but_flag_stop = False
-        self.gb1_layout = QtWidgets.QWidget(self.gb1)
-        self.gb1_layout.setGeometry(QtCore.QRect(10, 10, 710, 458))
-        self.gb1_layout.setObjectName("gb1_layout")
-        self.gb1_vlay = QtWidgets.QVBoxLayout(self.gb1_layout)
-        self.gb1_vlay.setObjectName("gb1_vlay")
-        self.gb1_vlay.addWidget(self.gb1_toolbar)
-        self.gb1_vlay.addWidget(self.gb1_canvas)
-        self.gb1_vlay.addWidget(self.gb1_but)
-        # define axes & declare legend
-        self.gb1_ax = self.gb1_figure.add_subplot(111)
-        self.gb1_legend = None
-        # cached background
-        self.gb1_cached_bg = None
-        self.gb1_artists = []
-        # plot settings
-        self.gb1_xlim = 3
-        self.gb1_ylim = self.gb1_xlim
-        # adjust axes
-        self.gb1_ax.set_xlabel("X [m]")
-        self.gb1_ax.set_ylabel("Y [m]")
-        self.gb1_ax.set_xlim(-self.gb1_xlim, self.gb1_xlim)
-        self.gb1_ax.set_ylim(-self.gb1_ylim, self.gb1_ylim)
-        self.gb1_ax.grid(which="major", color="gray", linestyle="-")
-        self.gb1_ax.grid(which="minor", color="whitesmoke", linestyle="--")
-        self.gb1_ax.minorticks_on()
-        self.gb1_canvas.draw()
         # timer for refreshing the plot
         self.ui_timer = QtCore.QTimer()
         self.ui_timer.setInterval(self.refresh_time_ms)
@@ -297,8 +238,7 @@ class Command_Ui:
 
         self.main_window.setWindowTitle("TWIPR Dashboard")
 
-        # gb1
-        self.gb1.setTitle("TWIPR Map")
+
 
         # gb2
         self.gb2.setTitle("Overview")
@@ -338,7 +278,6 @@ class Command_Ui:
         self.actionSmall.setText("Small")
 
         # signal and slots
-        self.gb1_but.clicked.connect(self.toggle_gb1_but_flag)
         self.gb22_line.returnPressed.connect(self.process_input_from_main_terminal)
 
         QtCore.QMetaObject.connectSlotsByName(self.main_window)

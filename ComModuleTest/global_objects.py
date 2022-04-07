@@ -3,7 +3,7 @@ from params import *
 from estimation.positionestimation import *
 from estimation.mocap import *
 from robot import *
-from GetHostIp import GetHostIP
+from get_hostIp import GetHostIP
 
 from ctypes import Structure
 import crc8

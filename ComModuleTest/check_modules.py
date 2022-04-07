@@ -11,10 +11,12 @@ class UpdateModules:
         os.system('sudo apt-get upgrade -y')
         os.system('sudo apt install python3-pip')
 #        os.system('sudo apt-get python3 -y')
-        for x in self.module_list_pip:
-            os.system('pip install ' + x)
-        for x in self.module_list_apt:
-          os.system('sudo apt-get install python3-'+ x +' -y')
+        for module in self.module_list_pip:
+            #os.system('pip install ' + x)
+            os.system('pip install {}'.format(module))
+        for module in self.module_list_apt:
+          #os.system('sudo apt-get install python3-'+ x +' -y')
+          os.system('sudo apt-get install python3-{} -y'.format(module))
 
         print(len(self.module_list_pip))
 

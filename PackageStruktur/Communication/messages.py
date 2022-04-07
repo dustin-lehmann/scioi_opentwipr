@@ -11,7 +11,7 @@ from params import *
 
 # My Imports
 from Robot.data import *
-from general import *
+from Communication.general import *
 
 
 class MessageHandler:

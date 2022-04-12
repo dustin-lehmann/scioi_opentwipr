@@ -1,4 +1,4 @@
-from Communication.HostServer import HostServer
+from Communication.host_server import HostServer
 import sys
 import PyQt5.QtWidgets
 

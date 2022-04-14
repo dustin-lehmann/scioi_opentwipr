@@ -1,4 +1,5 @@
 from Communication.host_server import HostServer
+from Ui.terminalinterface import TerminalInterface
 import sys
 import PyQt5.QtWidgets
 
@@ -14,8 +15,16 @@ def main():
 
     :return: Nothing
     """
+    # pass sys.arg to allow command line arguments
     app = PyQt5.QtWidgets.QApplication(sys.argv)
-    HostServer()
+
+    # create Host Server and start a thread that broadcasts the Sever-Ip via Udp
+    my_host_server = HostServer()
+
+    # create Terminal Interface and pass the Host Server that is used
+    TerminalInterface(my_host_server)
+
+    #
     sys.exit(app.exec())
 
 

@@ -24,6 +24,9 @@ import matplotlib.pyplot as plt
 
 # GCode
 from Communication.gcode_parser import gcode_parser
+from Communication.host_server import HostServer
+
+
 
 import sys
 from IO.file_handlers import txt_handler
@@ -32,19 +35,20 @@ from typing import List, Dict, Tuple, Set, Optional, Union, Sequence, Callable, 
 from datetime import datetime
 
 
-class Window(QtWidgets.QWidget):
-    def __init__(self):
-        super().__init__()
-        self.init_me()
+class TerminalInterface(QtWidgets.QWidget):
 
-    def init_me(self):
+    def __init__(self, host_server):
+        super().__init__()
+        self.init_terminal()
+        print(host_server.clients_number)
+
+    def init_terminal(self):
         self.main_window = QtWidgets.QMainWindow()
         self.main_window.setWindowIcon(QtGui.QIcon("Icons/TU_Logo_kurz_RGB_rot.jpg"))
         self.main_window.showMaximized()
         self.main_window.show()
 
         self.main_window.setObjectName("self.main_window")
-        #self.main_window.resize(1945, 1089)
         self.main_window.resize(1945, 500)
         self.main_window.setCursor(QtGui.QCursor(QtCore.Qt.ArrowCursor))
         self.centralwidget = QtWidgets.QWidget(self.main_window)
@@ -182,15 +186,11 @@ class Window(QtWidgets.QWidget):
         self.gb22_verlay.addWidget(self.gb22_combo)
         self.gb22_horlay.addLayout(self.gb22_verlay)
 
-
         #signals
         self.gb22_line.returnPressed.connect(self.process_input_from_main_terminal) #todo: hier wird terminal command abgearbeitet
 
         self.main_window.setCentralWidget(self.centralwidget)
 
-        #self.setGeometry(50, 50, 1000, 500)
-        #self.setWindowTitle("Terminal TestBed")
-        #self.show()
 
     def toggle_gb1_but_flag(self):
         # handle unwanted user behaviour
@@ -750,8 +750,10 @@ class Window(QtWidgets.QWidget):
             self.client_ui_list[9].timeout()
 
 
-app = QtWidgets.QApplication(sys.argv)
+if __name__ == "__main__":
 
-w = Window()
+    app = QtWidgets.QApplication(sys.argv)
 
-sys.exit(app.exec_())
+    w = TerminalInterface()
+
+    sys.exit(app.exec_())

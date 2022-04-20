@@ -1,6 +1,7 @@
 from typing import List, Union
 from params import SERVER_PORT
 from PyQt5.QtNetwork import QHostAddress, QTcpServer
+from PyQt5.QtCore import QObject, pyqtSignal
 from robot_ui import RobotUi
 from Communication.broadcast_host_ip import HostIp, BroadcastIpUDP
 import threading
@@ -10,15 +11,26 @@ from Communication.messages import msg_dictionary, MSG_HOST_IN_DEBUG
 from Experiment.experiment import experiment_handler, sequence_handler
 from Robot import data
 from params import HEADER_SIZE
+from time import sleep
 
 
-class HostServer:
+class HostServerThread(QObject):
     """
-    User interface to be able to communicate with the robots
-    Configuration of Host Server
+    create and configure the Host Server that is the key element of the communication
+    between host(Computer) and its clients(Robots)
     """
+
+    # define the signals that are used for communication
+    test_signal = pyqtSignal(int)
+    new_connection_signal = pyqtSignal(str, int)
+    finished = pyqtSignal()
 
     def __init__(self):
+
+        super().__init__()
+
+        #test-Variable #todo: remove
+        self.test_variable = 0
 
         # select Host-IP
         host_ip = HostIp().selected_ip
@@ -55,9 +67,18 @@ class HostServer:
         self.server = QTcpServer()
         self.start_host_server()
 
+    def run(self):
+
+        while True: #todo: integrate while not exit_io:
+            self.test_signal.emit(self.test_variable)
+            self.test_variable += 1
+
+            sleep(1)
+        self.finished.emit()
+
     def start_host_server(self):
         """
-        start Host Server
+        start the Host Server
         :return:
         """
         # set maximum amount of connections QTcpServer is going to accept
@@ -68,8 +89,7 @@ class HostServer:
         print("Host Server is listening on", self.server.serverAddress().toString(), ":", self.server.serverPort(),
               "!\n")
 
-        # connect empty slot to newConnection -> Signal is emitted every time a new connection is available
-        # connect to slot that is adding new clients to the list
+        # connect Signal new Connection to slot that is accepting new client and adding it to the list
         self.server.newConnection.connect(self.accept_new_client)
 
     def accept_new_client(self):
@@ -88,8 +108,14 @@ class HostServer:
             self.clients_number += 1
             # add client to list
             self.client_list[client_index] = self.server.nextPendingConnection()
-            print("New connection from", self.client_list[client_index].peerAddress().toString(), ":",
-                  self.client_list[client_index].peerPort(), "!\n")
+
+            peer_address = self.client_list[client_index].peerAddress().toString()
+            peer_port =   self.client_list[client_index].peerPort()
+
+            print("New connection from", peer_address, ":", peer_port, "!\n")
+
+            # emit new connection signal with peer address and peer port to the interface
+            self.new_connection_signal.emit(peer_address, peer_port)
 
             # currently: buffer of unlimited size
             # quick fix: the buffering number depends on the size of the biggest message
@@ -325,4 +351,4 @@ class HostServer:
 
 
 if __name__ == "__main__":
-    Host = HostServer()
+    Host = HostServerThread()

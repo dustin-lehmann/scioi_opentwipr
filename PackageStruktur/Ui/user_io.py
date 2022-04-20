@@ -1,0 +1,52 @@
+from PyQt5.QtCore import QThread
+from Ui.terminal_interface import TerminalInterface
+
+
+class UserIO:
+    """
+    base-Class used to create an object which is handling input/ output:
+
+    creates the Terminal interface and provides the add_thread function that is used
+    to add new QThreads to the main thread
+    """
+
+    def __init__(self):
+        #select terminal as user interface
+        self.user_interface = TerminalInterface()
+
+    def add_host_server_thread(self, host_server):
+        """
+        :param host_server: already existing host-server that is moved to the newly created thread
+        :return: nothing
+        """
+
+        self.host_server = host_server
+        #create new QThread
+        self.thread = QThread()
+        #move the host_server to the new thread
+        host_server.moveToThread(self.thread)
+
+        # connect Signals:
+
+        # Basic Signals (always do the same not dependant on the used interface)
+        self.thread.started.connect(self.host_server.run)
+        self.host_server.finished.connect(self.thread.quit)
+        self.host_server.finished.connect(self.host_server.deleteLater)
+        self.thread.finished.connect(self.thread.deleteLater)
+        self.thread.start()
+
+        #Signals to call specific functions depending on which interface is currently used (Terminal, full GUI, ...):
+
+        #
+        self.host_server.new_connection_signal.connect(self.user_interface.new_connection)
+
+    def test(self, testnumber):
+        string = "Testnumber = {}".format(testnumber)
+        print(string)
+
+    def host_server_ended(self):
+        """
+        if signal gets emitted that the host server finished execution print to console
+        :return: nothing
+        """
+        print("host_server execution ended")

@@ -47,12 +47,13 @@ class Window(QtWidgets.QWidget):
         self.Terminal.returnPressed.connect(self.process_input_from_main_terminal)
 
         #Liste
+        """
         self.gb22_list = QtWidgets.QListWidget(self.layoutWidget)
         self.gb22_list.setPalette(palette)
         self.gb22_list.setVerticalScrollBarPolicy(QtCore.Qt.ScrollBarAsNeeded)
         self.gb22_list.setObjectName("gb22_list")
         self.gb22_horlay.addWidget(self.gb22_list)
-
+        """
         self.setGeometry(50, 50, 1000, 500)
         self.setWindowTitle("Terminal TestBed")
         self.show()

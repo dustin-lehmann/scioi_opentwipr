@@ -24,7 +24,7 @@ import matplotlib.pyplot as plt
 
 # GCode
 from Communication.gcode_parser import gcode_parser
-from Communication.host_server import HostServer
+from Communication.host_server_thread import HostServerThread
 
 
 
@@ -37,10 +37,11 @@ from datetime import datetime
 
 class TerminalInterface(QtWidgets.QWidget):
 
-    def __init__(self, host_server):
+    #def __init__(self, host_server):
+    def __init__(self):
         super().__init__()
         self.init_terminal()
-        print(host_server.clients_number)
+        #print(host_server.clients_number)
 
     def init_terminal(self):
         self.main_window = QtWidgets.QMainWindow()
@@ -749,11 +750,17 @@ class TerminalInterface(QtWidgets.QWidget):
         elif tab_name == "TWIPR_9":
             self.client_ui_list[9].timeout()
 
+    # Interface specific Signal connections:
+    def new_connection(self, peer_address, peer_port):
+        string = "New Connection from {}, on Port: {}".format(peer_address, peer_port)
+        self.write_message_to_main_terminal(string, "R")
+
 
 if __name__ == "__main__":
 
     app = QtWidgets.QApplication(sys.argv)
 
     w = TerminalInterface()
+    w.write_message_to_main_terminal("Hallo", "R")
 
     sys.exit(app.exec_())

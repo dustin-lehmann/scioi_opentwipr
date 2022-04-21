@@ -20,7 +20,6 @@ from PyQt5 import QtWidgets, QtCore, QtGui
 
 import sys
 from IO.file_handlers import txt_handler
-from typing import List, Dict, Tuple, Set, Optional, Union, Sequence, Callable, Iterable, Iterator, Any
 
 from datetime import datetime
 
@@ -254,117 +253,6 @@ class TerminalInterface(QtWidgets.QWidget):
         self.user_input_signal.emit(line_text)
 
         self.clear_main_terminal_line_edit()
-
-    def execute_internal_call(self, cmd_list: List[Dict[str, Any]], write_to_terminal: bool, line_text: str) -> None:
-        # the cmd list comprises dictionaries containing a g-code and its arguments respectively
-        for gcode in cmd_list:
-            if gcode['type'] == 'M61':
-                # command limited to main terminal
-                self.write_message_to_main_terminal(line_text, 'W')
-                self.write_gcode_documentation_to_terminal()
-
-            elif gcode['type'] == 'M62':
-                self.write_message_to_main_terminal(line_text, 'W')
-                self.clear_main_terminal()
-
-            elif gcode['type'] == 'M63':
-                # command can affect all clients, therefore, write to all terminals
-                self.write_message_to_all_terminals(line_text, 'W')
-                self.gcode_execution_from_file(gcode['filename'])
-
-            elif gcode['type'] == 'M64':
-                self.write_message_to_main_terminal(line_text, 'W')
-                self.display_robot_data()
-
-            # TODO: TEST START
-            elif gcode['type'] == 'M65':
-                self.write_message_to_all_terminals(line_text, 'W')
-
-                # connection guard
-                if not self.clients_number > 0:
-                    self.write_message_to_main_terminal("Please connect a client!", 'R')
-                    return
-
-                msg = experiment_handler.load_experiment(gcode['filename'])
-                if not msg:
-                    self.write_message_to_main_terminal("Failed loading experiment!", "R")
-                    return
-                self.send_message_from_main_terminal(msg, write_to_terminal, line_text)
-
-            elif gcode['type'] == 'M66':
-                msg, start_gcodes = experiment_handler.start_experiment(gcode['filename'])
-                # execute commands before starting the experiment
-                for cmd in start_gcodes:
-                    self.enter_cmd_into_main_terminal(cmd)
-                # then start experiment
-                self.send_message_from_main_terminal(msg, write_to_terminal, line_text)
-
-            elif gcode['type'] == 'M67':
-                msg_load, msg_start = experiment_handler.load_and_start_experiment(gcode['filename'])
-                if not msg_load:
-                    self.write_message_to_main_terminal("Failed loading experiment!", "R")
-                    return
-                self.send_message_from_main_terminal(msg_load, write_to_terminal, line_text)
-                self.send_message_from_main_terminal(msg_start, False, line_text)
-
-            elif gcode['type'] == 'M68':
-                msg = experiment_handler.end_experiment(gcode['filename'])
-                self.send_message_from_main_terminal(msg, write_to_terminal, line_text)
-            # TODO: TEST END
-
-            elif gcode['type'] == 'M69':
-                self.write_message_to_all_terminals(line_text, 'W')
-
-                # connection guard
-                if not self.clients_number > 0:
-                    self.write_message_to_main_terminal("Please connect a client!", 'R')
-                    return
-
-                msg = sequence_handler.load_sequence(gcode['filename'])
-                if not msg:
-                    self.write_message_to_main_terminal("Failed loading sequence!", "R")
-                    return
-                self.send_message_from_main_terminal(msg, write_to_terminal, line_text)
-
-            elif gcode['type'] == 'M70':
-                self.write_message_to_all_terminals(line_text, 'W')
-
-                # connection guard
-                if not self.clients_number > 0:
-                    self.write_message_to_main_terminal("Please connect a client!", 'R')
-                    return
-
-                msg = sequence_handler.start_sequence(gcode['filename'])
-                self.send_message_from_main_terminal(msg, write_to_terminal, line_text)
-
-            elif gcode['type'] == 'M71':
-                self.write_message_to_all_terminals(line_text, 'W')
-
-                # connection guard
-                if not self.clients_number > 0:
-                    self.write_message_to_main_terminal("Please connect a client!", 'R')
-                    return
-
-                msg_load, msg_start = sequence_handler.load_and_start_sequence(gcode['filename'])
-                if not msg_load:
-                    self.write_message_to_main_terminal("Failed loading sequence!", "R")
-                    return
-                self.send_message_from_main_terminal(msg_load, write_to_terminal, line_text)
-                self.send_message_from_main_terminal(msg_start, False, line_text)
-
-            elif gcode['type'] == 'M72':
-                self.write_message_to_all_terminals(line_text, 'W')
-
-                # connection guard
-                if not self.clients_number > 0:
-                    self.write_message_to_main_terminal("Please connect a client!", 'R')
-                    return
-
-                msg = sequence_handler.end_sequence(gcode['filename'])
-                self.send_message_from_main_terminal(msg, write_to_terminal, line_text)
-
-            else:
-                pass
 
     def write_message_to_all_terminals(self, line_text, color):
         if self.clients_number == 0:

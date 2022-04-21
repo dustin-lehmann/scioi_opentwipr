@@ -14,6 +14,8 @@ class UserIO:
 
         # select terminal as user interface
         self.user_interface = TerminalInterface()
+        self.host_server = None
+        self.thread = None
 
     def add_host_server_thread(self, host_server):
         """
@@ -22,6 +24,10 @@ class UserIO:
         """
 
         self.host_server = host_server
+
+        # connect Signals from interface to host server, because otherwise it does not work -> TODO?
+        self.user_interface.user_input_signal.connect(self.host_server.process_user_input)
+
         # create new QThread
         self.thread = QThread()
         # move the host_server to the new thread
@@ -29,7 +35,7 @@ class UserIO:
 
         # connect Signals:
 
-        # Basic Signals (always do the same not dependant on the used interface)
+        # Basic Signals (always do the same not dependent on the used interface):
         self.thread.started.connect(self.host_server.run)
         self.host_server.finished.connect(self.thread.quit)
         self.host_server.finished.connect(self.host_server.deleteLater)
@@ -42,7 +48,6 @@ class UserIO:
         self.host_server.new_connection_signal.connect(self.user_interface.new_connection)
 
         # Signals from interface to host Server
-        self.user_interface.user_input_signal.connect(host_server.process_user_input)
 
     def host_server_ended(self):
         """

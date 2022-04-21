@@ -5,7 +5,10 @@ from params import SERVER_PORT
 from PyQt5.QtNetwork import QHostAddress, QTcpServer
 from PyQt5.QtCore import QObject, pyqtSignal
 
+#Robot User-Interface
 from robot_ui import RobotUi
+
+# Setting and Broadcasting Host-Ip
 from Communication.broadcast_host_ip import HostIp, BroadcastIpUDP
 import threading
 import crc8
@@ -16,8 +19,11 @@ from Robot import data
 from params import HEADER_SIZE
 from time import sleep
 
+from typing import List, Dict, Tuple, Set, Optional, Union, Sequence, Callable, Iterable, Iterator, Any
+
 # GCode handling
 from Communication.gcode_parser import gcode_parser
+
 
 class HostServerThread(QObject):
     """
@@ -26,7 +32,6 @@ class HostServerThread(QObject):
     """
 
     # define the signals that are used for communication
-    test_signal = pyqtSignal(int)
     new_connection_signal = pyqtSignal(str, int)
     finished = pyqtSignal()
 
@@ -75,7 +80,7 @@ class HostServerThread(QObject):
     def run(self):
 
         while True: #todo: integrate while not exit_io:
-            self.test_signal.emit(self.test_variable)
+            #self.test_signal.emit(self.test_variable)
             self.test_variable += 1
 
             sleep(1)
@@ -218,20 +223,18 @@ class HostServerThread(QObject):
         # check crc8 byte
         self.crc_check(client_index, msg)
 
-    def process_user_input(self, line_text, write_to_terminal=True):
+    def process_user_input(self, line_text, write_to_terminal=False,recipient="All"):
         """
         processing of the user input that is sent via the user_input_signal
-        :param line_text:
-        :param write_to_terminal:
-        :return:
+        :param line_text: input text
+        :param write_to_terminal: Determines if the processing of the message is going to be displayed on terminal
+        :param recipient: Determines the client the message is for, Default ="All"
+        :return:nothing
         """
 
         # parse input from line edit, the output of the parser is either a msg for ML/LL or
         # a list of strings containing g-codes that are meant for the HL (internal call)
         gcode_parser_output = gcode_parser.parse(line_text)
-
-        # get the recipient
-        combo_text = self.gb22_combo.currentText()
 
         if type(gcode_parser_output) == list:
             # validity check
@@ -243,24 +246,23 @@ class HostServerThread(QObject):
         else:
             if write_to_terminal:
                 self.write_message_to_all_terminals(line_text, 'W')
-            self.send_message_from_input(gcode_parser_output, write_to_terminal, line_text)  # HL -> ML/LL
+            self.send_message_from_input(gcode_parser_output, write_to_terminal, line_text, recipient)  # HL -> ML/LL
 
-    def send_message_from_input(self, msg, write_to_terminal, line_text):
+    def send_message_from_input(self, msg, write_to_terminal, line_text, recipient):
         """
         send a message from the main terminal by emitting a Signal that is send to the HostServer
         :param msg: output of the gcode parser
         :param write_to_terminal:
         :param line_text: line text before gcode parsing
-        :return:
+        :param recipient: receiver of message
+        :return: nothing
         """
-        # get the respective receivers first
-        combo_text = self.gb22_combo.currentText()
+
         # check if any clients are registered
 
         if self.clients_number > 0:
             #check if message is meant to be sent to all clients
-
-            if combo_text == "All":
+            if recipient == "All":
                 for client_index in range(self.clients_max):
                     if self.client_list[client_index] != 0:
                         if self.send_message(client_index, msg) == 1:
@@ -275,7 +277,7 @@ class HostServerThread(QObject):
             else:
                 for client_index in range(self.clients_max):
                     string = "TWIPR_" + str(client_index)
-                    if combo_text == string:
+                    if recipient == string:
                         if self.client_list[client_index] != 0:  # don't send if client has disconnected
                             if self.send_message(client_index, msg) == 1:
                                 # write sent command to terminal
@@ -286,12 +288,20 @@ class HostServerThread(QObject):
                                 self.write_sent_command_to_terminals(client_index, line_text, "R")
                                 self.write_message_to_terminals(client_index, "Failed to sent message!", "R")
                         else:
-                            self.popup_invalid_input_main_terminal("{} not connected!".format(combo_text))
+                            self.popup_invalid_input_main_terminal("{} not connected!".format(recipient))
             # clear the line edit
             self.gb22_line.setText("")
         else:
             # warning popup
             self.popup_invalid_input_main_terminal("Please connect a client!")
+
+    def execute_internal_call(self, cmd_list: List[Dict[str, Any]], write_to_terminal: bool, line_text: str) -> None:
+        # the cmd list comprises dictionaries containing a g-code and its arguments respectively
+        for gcode in cmd_list:
+            if gcode['type'] == 'M61':
+                print("internal call function called (Debug message)")
+            else:
+                pass
 
     def close_socket_0(self):
         i = 0

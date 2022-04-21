@@ -26,13 +26,10 @@ def main():
     host_server_thread = HostServerThread()
     user_io.add_host_server_thread(host_server_thread)
 
-
     #Todo: remove since not needed?
     host_server_thread.finished.connect(user_io.host_server_ended)
 
-
     sys.exit(app.exec())
-
 
 
 if __name__ == "__main__":

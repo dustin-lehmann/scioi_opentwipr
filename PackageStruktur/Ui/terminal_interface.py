@@ -17,16 +17,6 @@ from Ui.general import TerminalLineEdit
 # PyQt
 from PyQt5 import QtWidgets, QtCore, QtGui
 
-# Plotting
-from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
-from matplotlib.backends.backend_qt5agg import NavigationToolbar2QT as NavigationToolbar
-import matplotlib.pyplot as plt
-
-# GCode
-from Communication.gcode_parser import gcode_parser
-from Communication.host_server_thread import HostServerThread
-
-
 
 import sys
 from IO.file_handlers import txt_handler
@@ -36,6 +26,9 @@ from datetime import datetime
 
 
 class TerminalInterface(QtWidgets.QWidget):
+
+    # define the signals that are used to communicate with the HostServer
+    user_input_signal = QtCore.pyqtSignal(str)
 
     #def __init__(self, host_server):
     def __init__(self):
@@ -143,11 +136,6 @@ class TerminalInterface(QtWidgets.QWidget):
         self.gb22_verlay = QtWidgets.QHBoxLayout()
         self.gb22_verlay.setObjectName("gb22_verlay")
         self.gb22_line = TerminalLineEdit(self.layoutWidget)
-        self.gb22_line.set_functions(self.read_from_cmd_history_key_up,
-                                     self.read_from_cmd_history_key_down,
-                                     self.read_from_cmd_history_key_esc,
-                                     self.read_from_cmd_history_key_f1,
-                                     self.read_from_cmd_history_key_f2)
         palette = QtGui.QPalette()
         brush = QtGui.QBrush(QtGui.QColor(255, 255, 255))
         brush.setStyle(QtCore.Qt.SolidPattern)
@@ -193,90 +181,7 @@ class TerminalInterface(QtWidgets.QWidget):
         self.main_window.setCentralWidget(self.centralwidget)
 
 
-    def toggle_gb1_but_flag(self):
-        # handle unwanted user behaviour
-        if self.clients_number == 0 and not self.gb1_but_flag_stop:
-            # send warning popup
-            popup = QtWidgets.QMessageBox()
-            popup.setWindowTitle("TWIPR Dashboard")
-            popup.setText("Plot empty!")
-            popup.setIcon(QtWidgets.QMessageBox.Warning)
-            popup.setDetailedText("Please connect a client!")
-            popup.setWindowIcon(QtGui.QIcon("Icons/icon_256.png"))
-            x = popup.exec_()
-        else:
-            # change flag to signal plotting stop
-            self.gb1_but_flag_stop = not self.gb1_but_flag_stop
-            # change color of button to red if plotting has been stopped by the user
-            if self.gb1_but_flag_stop:
-                self.gb1_but.setStyleSheet("background-color : rgb(180, 0, 0); color : rgb(255, 255, 255)")
-            else:
-                # set to standard color
-                self.gb1_but.setStyleSheet("background-color : rgb(240, 240, 240)")
 
-    def read_from_cmd_history_key_up(self):
-        if self.cmd_history:
-            if self.cmd_history_reading_index == 0:
-                self.cmd_history_reading_index = len(self.cmd_history) - 1
-            else:
-                self.cmd_history_reading_index -= 1
-            cmd = self.cmd_history[self.cmd_history_reading_index]
-            self.gb22_line.setText(cmd)
-        else:
-            pass
-
-    def read_from_cmd_history_key_down(self):
-        if self.cmd_history:
-            if self.cmd_history_reading_index == len(self.cmd_history):
-                self.cmd_history_reading_index = len(self.cmd_history) - 1
-            elif self.cmd_history_reading_index == len(self.cmd_history) - 1:
-                self.cmd_history_reading_index = 0
-            else:
-                self.cmd_history_reading_index += 1
-            cmd = self.cmd_history[self.cmd_history_reading_index]
-            self.gb22_line.setText(cmd)
-        else:
-            pass
-
-    def read_from_cmd_history_key_esc(self):
-        cmd = 'M62'
-        self.gb22_line.setText(cmd)
-
-    def read_from_cmd_history_key_f1(self):
-        cmd = 'M61'
-        self.gb22_line.setText(cmd)
-
-    def read_from_cmd_history_key_f2(self):
-        # just an example
-        pass
-
-    def add_cmd_to_history(self, cmd):
-        # add valid command to history of the main terminal (and all the robot terminals)
-        self.write_to_cmd_history(cmd)
-        for client_index in range(self.clients_max):
-            if self.client_ui_list[client_index] != 0:
-                self.client_ui_list[client_index].write_to_cmd_history(cmd)
-
-    def write_to_cmd_history(self, cmd):
-        if len(self.cmd_history) < self.cmd_history_limit:
-            if len(self.cmd_history) == 0:
-                self.cmd_history.append(cmd)
-            else:
-                if cmd not in self.cmd_history:
-                    self.cmd_history.append(cmd)
-                else:
-                    cmd_index = self.cmd_history.index(cmd)
-                    self.cmd_history.pop(cmd_index)
-                    self.cmd_history.append(cmd)
-        else:
-            if cmd not in self.cmd_history:
-                self.cmd_history.pop(0)
-                self.cmd_history.append(cmd)
-            else:
-                cmd_index = self.cmd_history.index(cmd)
-                self.cmd_history.pop(cmd_index)
-                self.cmd_history.append(cmd)
-        self.cmd_history_reading_index = len(self.cmd_history)
 
     def gcode_execution_from_file(self, filename):
         self.clear_main_terminal_line_edit()
@@ -346,65 +251,9 @@ class TerminalInterface(QtWidgets.QWidget):
         if not line_text:
             self.popup_invalid_input_main_terminal("Please enter a command!")
             return
+        self.user_input_signal.emit(line_text)
 
         self.clear_main_terminal_line_edit()
-
-        # parse input from line edit, the output of the parser is a either a msg for ML/LL or
-        # a list of strings containing g-codes that are meant for the HL (internal call)
-        gcode_parser_output = gcode_parser.parse(line_text)
-
-        # get the recipient
-        combo_text = self.gb22_combo.currentText()
-
-        if type(gcode_parser_output) == list:
-            # validity check
-            if gcode_parser_output[0]['type'] == 'M60':
-                self.invalid_gcode(line_text)
-                return
-
-            self.execute_internal_call(gcode_parser_output, write_to_terminal, line_text)  # HL -> HL
-        else:
-            if write_to_terminal:
-                self.write_message_to_all_terminals(line_text, 'W')
-            self.send_message_from_main_terminal(gcode_parser_output, write_to_terminal, line_text)  # HL -> ML/LL
-
-        self.add_cmd_to_history(line_text)
-
-    def send_message_from_main_terminal(self, msg, write_to_terminal, line_text):
-        # get the respective receivers first
-        combo_text = self.gb22_combo.currentText()
-        if self.clients_number > 0:
-            if combo_text == "All":
-                for client_index in range(self.clients_max):
-                    if self.client_list[client_index] != 0:
-                        if self.send_message(client_index, msg) == 1:
-                            # write sent command to terminal
-                            if write_to_terminal:
-                                self.write_sent_command_to_terminals(client_index, line_text, "Y")
-                        else:
-                            # write error message to terminals
-                            self.write_sent_command_to_terminals(client_index, line_text, "R")
-                            self.write_message_to_terminals(client_index, "Failed to sent message!", "R")
-            else:
-                for client_index in range(self.clients_max):
-                    string = "TWIPR_" + str(client_index)
-                    if combo_text == string:
-                        if self.client_list[client_index] != 0:  # don't send if client has disconnected
-                            if self.send_message(client_index, msg) == 1:
-                                # write sent command to terminal
-                                if write_to_terminal:
-                                    self.write_sent_command_to_terminals(client_index, line_text, "Y")
-                            else:
-                                # write error message to terminals
-                                self.write_sent_command_to_terminals(client_index, line_text, "R")
-                                self.write_message_to_terminals(client_index, "Failed to sent message!", "R")
-                        else:
-                            self.popup_invalid_input_main_terminal("{} not connected!".format(combo_text))
-            # clear the line edit
-            self.gb22_line.setText("")
-        else:
-            # warning popup
-            self.popup_invalid_input_main_terminal("Please connect a client!")
 
     def execute_internal_call(self, cmd_list: List[Dict[str, Any]], write_to_terminal: bool, line_text: str) -> None:
         # the cmd list comprises dictionaries containing a g-code and its arguments respectively

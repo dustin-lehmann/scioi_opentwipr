@@ -22,17 +22,14 @@ def main():
     # create UserIO-object
     user_io = UserIO()
 
-
-
-    # start all the threads:
-
     # HostServerThread:
     host_server_thread = HostServerThread()
     user_io.add_host_server_thread(host_server_thread)
 
-    # connect GUI-Signals:
-    host_server_thread.test_signal.connect(user_io.test)
+
+    #Todo: remove since not needed?
     host_server_thread.finished.connect(user_io.host_server_ended)
+
 
     sys.exit(app.exec())
 

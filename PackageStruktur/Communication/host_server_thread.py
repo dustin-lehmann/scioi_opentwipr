@@ -1,7 +1,10 @@
 from typing import List, Union
 from params import SERVER_PORT
+
+#pyQt
 from PyQt5.QtNetwork import QHostAddress, QTcpServer
 from PyQt5.QtCore import QObject, pyqtSignal
+
 from robot_ui import RobotUi
 from Communication.broadcast_host_ip import HostIp, BroadcastIpUDP
 import threading
@@ -13,6 +16,8 @@ from Robot import data
 from params import HEADER_SIZE
 from time import sleep
 
+# GCode handling
+from Communication.gcode_parser import gcode_parser
 
 class HostServerThread(QObject):
     """
@@ -213,7 +218,80 @@ class HostServerThread(QObject):
         # check crc8 byte
         self.crc_check(client_index, msg)
 
+    def process_user_input(self, line_text, write_to_terminal=True):
+        """
+        processing of the user input that is sent via the user_input_signal
+        :param line_text:
+        :param write_to_terminal:
+        :return:
+        """
 
+        # parse input from line edit, the output of the parser is either a msg for ML/LL or
+        # a list of strings containing g-codes that are meant for the HL (internal call)
+        gcode_parser_output = gcode_parser.parse(line_text)
+
+        # get the recipient
+        combo_text = self.gb22_combo.currentText()
+
+        if type(gcode_parser_output) == list:
+            # validity check
+            if gcode_parser_output[0]['type'] == 'M60':
+                self.invalid_gcode(line_text)
+                return
+
+            self.execute_internal_call(gcode_parser_output, write_to_terminal, line_text)  # HL -> HL
+        else:
+            if write_to_terminal:
+                self.write_message_to_all_terminals(line_text, 'W')
+            self.send_message_from_input(gcode_parser_output, write_to_terminal, line_text)  # HL -> ML/LL
+
+    def send_message_from_input(self, msg, write_to_terminal, line_text):
+        """
+        send a message from the main terminal by emitting a Signal that is send to the HostServer
+        :param msg: output of the gcode parser
+        :param write_to_terminal:
+        :param line_text: line text before gcode parsing
+        :return:
+        """
+        # get the respective receivers first
+        combo_text = self.gb22_combo.currentText()
+        # check if any clients are registered
+
+        if self.clients_number > 0:
+            #check if message is meant to be sent to all clients
+
+            if combo_text == "All":
+                for client_index in range(self.clients_max):
+                    if self.client_list[client_index] != 0:
+                        if self.send_message(client_index, msg) == 1:
+                            # write sent command to terminal
+                            if write_to_terminal:
+                                self.write_sent_command_to_terminals(client_index, line_text, "Y")
+                        else:
+                            # write error message to terminals
+                            self.write_sent_command_to_terminals(client_index, line_text, "R")
+                            self.write_message_to_terminals(client_index, "Failed to sent message!", "R")
+            #
+            else:
+                for client_index in range(self.clients_max):
+                    string = "TWIPR_" + str(client_index)
+                    if combo_text == string:
+                        if self.client_list[client_index] != 0:  # don't send if client has disconnected
+                            if self.send_message(client_index, msg) == 1:
+                                # write sent command to terminal
+                                if write_to_terminal:
+                                    self.write_sent_command_to_terminals(client_index, line_text, "Y")
+                            else:
+                                # write error message to terminals
+                                self.write_sent_command_to_terminals(client_index, line_text, "R")
+                                self.write_message_to_terminals(client_index, "Failed to sent message!", "R")
+                        else:
+                            self.popup_invalid_input_main_terminal("{} not connected!".format(combo_text))
+            # clear the line edit
+            self.gb22_line.setText("")
+        else:
+            # warning popup
+            self.popup_invalid_input_main_terminal("Please connect a client!")
 
     def close_socket_0(self):
         i = 0

@@ -6,12 +6,13 @@ class UserIO:
     """
     base-Class used to create an object which is handling input/ output:
 
-    creates the Terminal interface and provides the add_thread function that is used
-    to add new QThreads to the main thread
+    creates the user interface which happens to be a terminal for now and provides the add_thread
+    function that is used to add new QThreads to the main thread
     """
 
     def __init__(self):
-        #select terminal as user interface
+
+        # select terminal as user interface
         self.user_interface = TerminalInterface()
 
     def add_host_server_thread(self, host_server):
@@ -21,9 +22,9 @@ class UserIO:
         """
 
         self.host_server = host_server
-        #create new QThread
+        # create new QThread
         self.thread = QThread()
-        #move the host_server to the new thread
+        # move the host_server to the new thread
         host_server.moveToThread(self.thread)
 
         # connect Signals:
@@ -35,14 +36,13 @@ class UserIO:
         self.thread.finished.connect(self.thread.deleteLater)
         self.thread.start()
 
-        #Signals to call specific functions depending on which interface is currently used (Terminal, full GUI, ...):
+        # Signals to call specific functions depending on which interface is currently used (Terminal, full GUI, ...):
 
-        #
+        # Signals from host_server to interface
         self.host_server.new_connection_signal.connect(self.user_interface.new_connection)
 
-    def test(self, testnumber):
-        string = "Testnumber = {}".format(testnumber)
-        print(string)
+        # Signals from interface to host Server
+        self.user_interface.user_input_signal.connect(host_server.process_user_input)
 
     def host_server_ended(self):
         """

@@ -113,6 +113,7 @@ class HostServerThread(QObject):
             # get first free index in client list and break when finished
             # reset client_index
             client_index = 0
+            #todo: Hiereaus verkettete Liste? -> müsste man nichtmehr durch die ganzen Clients
             for i in range(self.clients_max):
                 if self.client_list[i] == 0:
                     # variable is used to connect client with its functions
@@ -137,50 +138,9 @@ class HostServerThread(QObject):
             self.client_list[client_index].setReadBufferSize(100)
 
             # this connects the signals of the socket to the respective functions
-            if client_index == 0:
-                #self.client_list[client_index].readyRead.connect(self.read_buffer(client_index))
-                #self.client_list[client_index].error.connect(self.close_socket(client_index))
-
-                self.client_list[client_index].readyRead.connect(self.read_buffer_0)
-
-                # self.client_list[client_index].disconnected.connect(self.close_socket_0)  # disconnected == error
-                self.client_list[client_index].error.connect(self.close_socket_0)
-            elif client_index == 1:
-                self.client_list[client_index].readyRead.connect(self.read_buffer_1)
-                # self.client_list[client_index].disconnected.connect(self.close_socket_1)  # disconnected == error
-                self.client_list[client_index].error.connect(self.close_socket_1)
-            elif client_index == 2:
-                self.client_list[client_index].readyRead.connect(self.read_buffer_2)
-                # self.client_list[client_index].disconnected.connect(self.close_socket_2)  # disconnected == error
-                self.client_list[client_index].error.connect(self.close_socket_2)
-            elif client_index == 3:
-                self.client_list[client_index].readyRead.connect(self.read_buffer_3)
-                # self.client_list[client_index].disconnected.connect(self.close_socket_3)  # disconnected == error
-                self.client_list[client_index].error.connect(self.close_socket_3)
-            elif client_index == 4:
-                self.client_list[client_index].readyRead.connect(self.read_buffer_4)
-                # self.client_list[client_index].disconnected.connect(self.close_socket_4)  # disconnected == error
-                self.client_list[client_index].error.connect(self.close_socket_4)
-            elif client_index == 5:
-                self.client_list[client_index].readyRead.connect(self.read_buffer_5)
-                # self.client_list[client_index].disconnected.connect(self.close_socket_5)  # disconnected == error
-                self.client_list[client_index].error.connect(self.close_socket_5)
-            elif client_index == 6:
-                self.client_list[client_index].readyRead.connect(self.read_buffer_6)
-                # self.client_list[client_index].disconnected.connect(self.close_socket_6)  # disconnected == error
-                self.client_list[client_index].error.connect(self.close_socket_6)
-            elif client_index == 7:
-                self.client_list[client_index].readyRead.connect(self.read_buffer_7)
-                # self.client_list[client_index].disconnected.connect(self.close_socket_7)  # disconnected == error
-                self.client_list[client_index].error.connect(self.close_socket_7)
-            elif client_index == 8:
-                self.client_list[client_index].readyRead.connect(self.read_buffer_8)
-                # self.client_list[client_index].disconnected.connect(self.close_socket_8)  # disconnected == error
-                self.client_list[client_index].error.connect(self.close_socket_8)
-            elif client_index == 9:
-                self.client_list[client_index].readyRead.connect(self.read_buffer_9)
-                # self.client_list[client_index].disconnected.connect(self.close_socket_9)  # disconnected == error
-                self.client_list[client_index].error.connect(self.close_socket_9)
+            #TODO: change this parameter
+            self.client_list[client_index].readyRead.connect(lambda: self.read_buffer(client_index))
+            self.client_list[client_index].error.connect(lambda: self.close_socket(client_index))
 
             # pause accepting new clients but keep them in connection queue
             if self.clients_number == self.clients_max:
@@ -301,6 +261,11 @@ class HostServerThread(QObject):
             self.popup_invalid_input_main_terminal("Please connect a client!")
 
     def invalid_gcode(self, user_input: str) -> None:
+        """
+        print 'invalid GCODE' to console
+        :param user_input:
+        :return:
+        """
         string = "Invalid G-code! Please refer to the documentation for further information! (F1)"
         print("invalid GCODE")
 
@@ -312,47 +277,12 @@ class HostServerThread(QObject):
             else:
                 pass
 
-    def close_socket_0(self):
-        i = 0
-        self.close_socket(i)
-
-    def close_socket_1(self):
-        i = 1
-        self.close_socket(i)
-
-    def close_socket_2(self):
-        i = 2
-        self.close_socket(i)
-
-    def close_socket_3(self):
-        i = 3
-        self.close_socket(i)
-
-    def close_socket_4(self):
-        i = 4
-        self.close_socket(i)
-
-    def close_socket_5(self):
-        i = 5
-        self.close_socket(i)
-
-    def close_socket_6(self):
-        i = 6
-        self.close_socket(i)
-
-    def close_socket_7(self):
-        i = 7
-        self.close_socket(i)
-
-    def close_socket_8(self):
-        i = 8
-        self.close_socket(i)
-
-    def close_socket_9(self):
-        i = 9
-        self.close_socket(i)
-
     def close_socket(self, client_index):
+        """
+        close a socket once the client has disconnected
+        :param client_index: index of client in client_list
+        :return: nothin
+        """
         # (1) handle client connection
         self.client_list[client_index].close()
         # remove client from list
@@ -361,47 +291,12 @@ class HostServerThread(QObject):
         print("Client socket", client_index, "closed and removed from the list!")
         self.server.resumeAccepting()
 
-    def read_buffer_0(self):
-        i = 0
-        self.read_buffer(i)
-
-    def read_buffer_1(self):
-        i = 1
-        self.read_buffer(i)
-
-    def read_buffer_2(self):
-        i = 2
-        self.read_buffer(i)
-
-    def read_buffer_3(self):
-        i = 3
-        self.read_buffer(i)
-
-    def read_buffer_4(self):
-        i = 4
-        self.read_buffer(i)
-
-    def read_buffer_5(self):
-        i = 5
-        self.read_buffer(i)
-
-    def read_buffer_6(self):
-        i = 6
-        self.read_buffer(i)
-
-    def read_buffer_7(self):
-        i = 7
-        self.read_buffer(i)
-
-    def read_buffer_8(self):
-        i = 8
-        self.read_buffer(i)
-
-    def read_buffer_9(self):
-        i = 9
-        self.read_buffer(i)
-
     def read_buffer(self, client_index):
+        """
+        read the client
+        :param client_index: index of client in client_list
+        :return:
+        """
         # first read: header including msg id byte
         header = self.client_list[client_index].read(HEADER_SIZE)
         if not header:
@@ -422,6 +317,12 @@ class HostServerThread(QObject):
         self.crc_check(client_index, msg)
 
     def crc_check(self, client_index, msg):
+        """
+        execute crc-check
+        :param client_index: client index in client_ui_list
+        :param msg: msg that is to be checked
+        :return:
+        """
         # create a new CRC8 object
         crc_object = crc8.crc8()
         crc_object.update(msg)

@@ -238,12 +238,6 @@ class TerminalInterface(QtWidgets.QWidget):
         self.gb22_line.setText(cmd)
         self.process_input_from_main_terminal(write_to_terminal=write_to_terminal)
 
-    def invalid_gcode(self, user_input: str) -> None:
-        string = "Invalid G-code! Please refer to the documentation for further information! (F1)"
-        self.write_message_to_all_terminals(user_input, 'W')
-        self.write_message_to_all_terminals(string, 'R')
-        # self.popup_invalid_input_main_terminal(string)
-
     def process_input_from_main_terminal(self, write_to_terminal=True):
         # read text from line edit "gb22" and make a list
         line_text = self.gb22_line.text()
@@ -315,18 +309,6 @@ class TerminalInterface(QtWidgets.QWidget):
         popup.setDetailedText(str(e))
         popup.setWindowIcon(QtGui.QIcon("Icons/icon_256.png"))
         x = popup.exec_()
-
-    def display_robot_data(self) -> None:
-        # M64
-        self.clear_main_terminal_line_edit()
-
-        if self.clients_number > 0:
-            robot_ui_objects = self.get_robot_ui_objects_from_combo_box()
-            for robot_ui in robot_ui_objects:
-                string = robot_ui.get_robot_data_string()
-                self.write_message_to_main_terminal(string, 'W')
-        else:
-            self.write_message_to_main_terminal("Please connect a client!", 'R')
 
     def get_all_client_ui_object(self):
         client_ui_objects = []
@@ -490,7 +472,7 @@ class TerminalInterface(QtWidgets.QWidget):
     # Interface specific Signal connections:
     def new_connection(self, peer_address, peer_port):
         string = "New Connection from {}, on Port: {}".format(peer_address, peer_port)
-        self.write_message_to_main_terminal(string, "R")
+        self.write_message_to_main_terminal(string, "G")
 
 
 if __name__ == "__main__":

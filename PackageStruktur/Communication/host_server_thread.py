@@ -1,12 +1,15 @@
 from typing import List, Union
 from params import SERVER_PORT
 
-#pyQt
+# pyQt
 from PyQt5.QtNetwork import QHostAddress, QTcpServer
 from PyQt5.QtCore import QObject, pyqtSignal
 
-#Robot User-Interface
+# Robot User-Interface
 from robot_ui import RobotUi
+
+#queue for outgoing messages
+from queue import Queue
 
 # Setting and Broadcasting Host-Ip
 from Communication.broadcast_host_ip import HostIp, BroadcastIpUDP
@@ -67,21 +70,22 @@ class HostServerThread(QObject):
         # initialize QHostAddress-class
         self.server_address = QHostAddress()
 
-        # set server address to chosen ip
+        # set Host-Server address to chosen ip
         self.server_address.setAddress(host_ip)
 
-        # set Server Port
+        # set Host-Server Port
         self.server_port = SERVER_PORT
 
         # construct QTcpServer Object
         self.server = QTcpServer()
         self.start_host_server()
 
+        # queue for outgoing messages TODO: every Agent with seperate queue + one for all?
+        self.outgoing_messages_queue = Queue(100)
+
     def run(self):
 
         while True: #todo: integrate while not exit_io:
-            #self.test_signal.emit(self.test_variable)
-            self.test_variable += 1
 
             sleep(1)
         self.finished.emit()
@@ -116,7 +120,7 @@ class HostServerThread(QObject):
                     break
             # increment the number of currently registered clients
             self.clients_number += 1
-            # add client to list
+            # Next pending connection is being returned as a QTcpSocket Object
             self.client_list[client_index] = self.server.nextPendingConnection()
 
             peer_address = self.client_list[client_index].peerAddress().toString()
@@ -247,6 +251,7 @@ class HostServerThread(QObject):
             if write_to_terminal:
                 self.write_message_to_all_terminals(line_text, 'W')
             self.send_message_from_input(gcode_parser_output, write_to_terminal, line_text, recipient)  # HL -> ML/LL
+            print("Message to ML/LL")
 
     def send_message_from_input(self, msg, write_to_terminal, line_text, recipient):
         """
@@ -290,10 +295,14 @@ class HostServerThread(QObject):
                         else:
                             self.popup_invalid_input_main_terminal("{} not connected!".format(recipient))
             # clear the line edit
-            self.gb22_line.setText("")
+            #self.gb22_line.setText("") todo: not needed because terminal does it anyway?
         else:
             # warning popup
             self.popup_invalid_input_main_terminal("Please connect a client!")
+
+    def invalid_gcode(self, user_input: str) -> None:
+        string = "Invalid G-code! Please refer to the documentation for further information! (F1)"
+        print("invalid GCODE")
 
     def execute_internal_call(self, cmd_list: List[Dict[str, Any]], write_to_terminal: bool, line_text: str) -> None:
         # the cmd list comprises dictionaries containing a g-code and its arguments respectively
@@ -411,8 +420,6 @@ class HostServerThread(QObject):
 
         # check crc8 byte
         self.crc_check(client_index, msg)
-
-
 
     def crc_check(self, client_index, msg):
         # create a new CRC8 object

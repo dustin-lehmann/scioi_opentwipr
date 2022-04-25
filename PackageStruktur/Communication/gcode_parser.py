@@ -11,11 +11,17 @@ class GCODEParser:
         self.cmd_list = []
 
     def parse(self, string):
-        # delete old commands
+        """
+        parse the GCODE in a message that then can be sent
+        :param string: GCODE that needs to be parsed
+        :return: parsed message if string is valid, otherwise return M60
+        """
+        # delete old commands #todo: what is meant here?
         self.cmd_list.clear()
-        # check for G-code
+        # check for G-code, if string not valid set type to M60
         first_check = re.search('(?i)^([GM][0-9]{1,3})', string)
         if first_check is None:
+            #Set message type to M60
             self.cmd_list = [{'type': 'M60'}]
             return self.cmd_list
         else:
@@ -26,6 +32,7 @@ class GCODEParser:
             # ------------------------------------------------------------------------------------------------ #
 
             # G0 - Configuration of the supervisor
+            # example: G0 E(0,0,0,0,0,0,0,0,0)
             if cmd == 'G0':
                 match = re.search(r'(?i)^G0\s?E\('
                                   '(?P<SV0>[01]),'

@@ -1,31 +1,54 @@
-from typing import List, Union
-from params import SERVER_PORT
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+#----------------------------------------------------------------------------
+# Created By  : David Stoll
+# Supervisor  : Dustin Lehmann
+# Created Date: 10/04/22
+# version ='1.0'
+# ---------------------------------------------------------------------------
+"""
+This module handles the Server thread. The Host Ip is selected and then continuously broadcasted through another
+thread, the Host Server that is responsible for all the communication between Host and its clients is created all the
+functions for handling clients are provided and Signals are emitted if the status of the Server changes f.e.
+when a new client connection is made. Those Signals have to be connected with the respective interface
+slots(= functions)
+"""
+# ---------------------------------------------------------------------------
+# Module Imports
+
+from time import sleep
 
 # pyQt
 from PyQt5.QtNetwork import QHostAddress, QTcpServer
 from PyQt5.QtCore import QObject, pyqtSignal
 
-# Robot User-Interface
-from robot_ui import RobotUi
-
-#queue for outgoing messages
-from queue import Queue
-
-# Setting and Broadcasting Host-Ip
-from Communication.broadcast_host_ip import HostIp, BroadcastIpUDP
+#create threads
 import threading
+
+#do crc8 checks of messages
 import crc8
-from Communication.general import msg_parser, msg_builder, check_header, get_msg_len
-from Communication.messages import msg_dictionary, MSG_HOST_IN_DEBUG
-from Experiment.experiment import experiment_handler, sequence_handler
-from Robot import data
-from params import HEADER_SIZE
-from time import sleep
 
 from typing import List, Dict, Tuple, Set, Optional, Union, Sequence, Callable, Iterable, Iterator, Any
 
-# GCode handling
+# ---------------------------------------------------------------------------
+# ---------------------------------------------------------------------------
+# Imports
+
+from typing import List, Union
+
+
+# Setting and Broadcasting Host-Ip
+from Communication.broadcast_host_ip import HostIp, BroadcastIpUDP
+
+# Robot User-Interface
+from robot_ui import RobotUi
+
+from Communication.general import msg_parser, msg_builder, check_header, get_msg_len
+from Communication.messages import msg_dictionary, MSG_HOST_IN_DEBUG
+from Experiment.experiment import experiment_handler, sequence_handler
+from params import SERVER_PORT, HEADER_SIZE
 from Communication.gcode_parser import gcode_parser
+# ---------------------------------------------------------------------------
 
 
 class HostServerThread(QObject):
@@ -79,9 +102,6 @@ class HostServerThread(QObject):
         # construct QTcpServer Object
         self.server = QTcpServer()
         self.start_host_server()
-
-        # queue for outgoing messages TODO: every Agent with seperate queue + one for all?
-        self.outgoing_messages_queue = Queue(100)
 
     def run(self):
 
@@ -137,9 +157,10 @@ class HostServerThread(QObject):
             # TODO:: NOT CHANGING THIS PARAMETER WILL CAUSE THE HL TO FAIL AT READING INCOMING MESSAGES
             self.client_list[client_index].setReadBufferSize(100)
 
-            # this connects the signals of the socket to the respective functions
-            #TODO: change this parameter
+            # connect readyRead-Signal to read_buffer function of new client
             self.client_list[client_index].readyRead.connect(lambda: self.read_buffer(client_index))
+
+            # connect error-Signal to close_socket function of new client to call after connection ended
             self.client_list[client_index].error.connect(lambda: self.close_socket(client_index))
 
             # pause accepting new clients but keep them in connection queue
@@ -151,6 +172,12 @@ class HostServerThread(QObject):
             pass
 
     def send_message(self, client_index, msg):
+        """
+        send the message by writing into the clients buffer, which emits a signal that send the message to the client
+        :param client_index:
+        :param msg: message that is to be sent
+        :return: 1 if successful, 0 if failed
+        """
         buffer = msg_builder(msg)
         bytes_sent = self.client_list[client_index].write(buffer)
         if bytes_sent == -1:
@@ -158,42 +185,13 @@ class HostServerThread(QObject):
         else:
             return 1
 
-    def close_socket(self, client_index):
-        # (1) handle client connection
-        self.client_list[client_index].close()
-        # remove client from list
-        self.client_list[client_index] = 0
-        self.clients_number -= 1
-        print("Client socket", client_index, "closed and removed from the list!")
-        self.server.resumeAccepting()
-
-    def read_buffer(self, client_index):
-        # first read: header including msg id byte
-        header = self.client_list[client_index].read(5) #TODO: change to not having to use hard coded value -> detection of some elements (Header/ Tail?)
-        if not header:
-            print("Empty header!")
-        # static length messaging -> now: dynamic length messaging
-        if not check_header(header):
-            print("Header corrupted!")
-
-        # second read: payload and tail
-        msg_len, rest_len = get_msg_len(header)
-        rest_of_msg = self.client_list[client_index].read(rest_len)
-        if not rest_of_msg:
-            print("Failed to read payload and tail!")
-
-        msg = header + rest_of_msg
-
-        # check crc8 byte
-        self.crc_check(client_index, msg)
-
     def process_user_input(self, line_text, write_to_terminal=False,recipient="All"):
         """
         processing of the user input that is sent via the user_input_signal
         :param line_text: input text
         :param write_to_terminal: Determines if the processing of the message is going to be displayed on terminal
         :param recipient: Determines the client the message is for, Default ="All"
-        :return:nothing
+        :return: nothing
         """
 
         # parse input from line edit, the output of the parser is either a msg for ML/LL or
@@ -215,7 +213,7 @@ class HostServerThread(QObject):
 
     def send_message_from_input(self, msg, write_to_terminal, line_text, recipient):
         """
-        send a message from the main terminal by emitting a Signal that is send to the HostServer
+        send a message from the main terminal by emitting a Signal that is sent to the HostServer
         :param msg: output of the gcode parser
         :param write_to_terminal:
         :param line_text: line text before gcode parsing
@@ -281,7 +279,7 @@ class HostServerThread(QObject):
         """
         close a socket once the client has disconnected
         :param client_index: index of client in client_list
-        :return: nothin
+        :return: nothing
         """
         # (1) handle client connection
         self.client_list[client_index].close()

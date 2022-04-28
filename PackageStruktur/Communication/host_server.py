@@ -33,9 +33,7 @@ from typing import List, Dict, Tuple, Set, Optional, Union, Sequence, Callable, 
 # ---------------------------------------------------------------------------
 # ---------------------------------------------------------------------------
 # Imports
-
-from typing import List, Union
-
+from Communication.core_messages import BaseMessage
 
 # Setting and Broadcasting Host-Ip
 from Communication.broadcast_host_ip import HostIp, BroadcastIpUDP
@@ -51,13 +49,13 @@ from Communication.gcode_parser import gcode_parser
 # ---------------------------------------------------------------------------
 
 
-class HostServerThread(QObject):
+class HostServer(QObject):
     """
     create and configure the Host Server that is the key element of the communication
     between host(Computer) and its clients(Robots)
     """
 
-    # define the signals that are used for communication
+    # Each time this Signal is emitted there has been a new connection to the Host Server
     new_connection_signal = pyqtSignal(str, int)
     finished = pyqtSignal()
 
@@ -65,13 +63,12 @@ class HostServerThread(QObject):
 
         super().__init__()
 
-        #test-Variable #todo: remove
-        self.test_variable = 0
+        #self.send_byte_message_signal.connect(self.send_message)
 
-        # select Host-IP
+        # select IP-Address that the Host Application is going to use
         host_ip = HostIp().selected_ip
 
-        # start Broadcasting of IP via UDP in seperate thread
+        # start Broadcasting of IP via UDP in separate thread
         broadcast_ip_thread = threading.Thread(target=BroadcastIpUDP, args=(host_ip,))
         broadcast_ip_thread.start()
 
@@ -105,8 +102,8 @@ class HostServerThread(QObject):
 
     def run(self):
 
-        while True: #todo: integrate while not exit_io:
-
+        while True: # todo: integrate while not exit_io
+            # make thread less CPU intensive -> better options?
             sleep(1)
         self.finished.emit()
 
@@ -174,7 +171,7 @@ class HostServerThread(QObject):
     def send_message(self, client_index, msg):
         """
         send the message by writing into the clients buffer, which emits a signal that send the message to the client
-        :param client_index:
+        :param client_index: index of client message is sent to
         :param msg: message that is to be sent
         :return: 1 if successful, 0 if failed
         """
@@ -185,10 +182,10 @@ class HostServerThread(QObject):
         else:
             return 1
 
-    def process_user_input(self, line_text, write_to_terminal=False,recipient="All"):
+    def process_user_input_gcode(self, input_text, write_to_terminal=False, recipient="All"):
         """
-        processing of the user input that is sent via the user_input_signal
-        :param line_text: input text
+        processing of the user input (GCODE) that is sent via the user_input_signal
+        :param input_text: input text
         :param write_to_terminal: Determines if the processing of the message is going to be displayed on terminal
         :param recipient: Determines the client the message is for, Default ="All"
         :return: nothing
@@ -196,19 +193,19 @@ class HostServerThread(QObject):
 
         # parse input from line edit, the output of the parser is either a msg for ML/LL or
         # a list of strings containing g-codes that are meant for the HL (internal call)
-        gcode_parser_output = gcode_parser.parse(line_text)
+        gcode_parser_output = gcode_parser.parse(input_text)
 
         if type(gcode_parser_output) == list:
             # validity check
             if gcode_parser_output[0]['type'] == 'M60':
-                self.invalid_gcode(line_text)
+                self.invalid_gcode(input_text)
                 return
 
-            self.execute_internal_call(gcode_parser_output, write_to_terminal, line_text)  # HL -> HL
+            self.execute_internal_call(gcode_parser_output, write_to_terminal, input_text)  # HL -> HL
         else:
             if write_to_terminal:
-                self.write_message_to_all_terminals(line_text, 'W')
-            self.send_message_from_input(gcode_parser_output, write_to_terminal, line_text, recipient)  # HL -> ML/LL
+                self.write_message_to_all_terminals(input_text, 'W')
+            self.send_message_from_input(gcode_parser_output, write_to_terminal, input_text, recipient)  # HL -> ML/LL
             print("Message to ML/LL")
 
     def send_message_from_input(self, msg, write_to_terminal, line_text, recipient):
@@ -256,7 +253,8 @@ class HostServerThread(QObject):
             #self.gb22_line.setText("") todo: not needed because terminal does it anyway?
         else:
             # warning popup
-            self.popup_invalid_input_main_terminal("Please connect a client!")
+            #self.popup_invalid_input_main_terminal("Please connect a client!") #TODO: use again
+            print("Connect client first!")
 
     def invalid_gcode(self, user_input: str) -> None:
         """
@@ -345,4 +343,4 @@ class HostServerThread(QObject):
 
 
 if __name__ == "__main__":
-    Host = HostServerThread()
+    Host = HostServer()

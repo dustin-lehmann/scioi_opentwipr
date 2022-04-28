@@ -2,6 +2,7 @@ from Communication.messages import *
 from Robot.data import *
 import re
 from typing import List, Dict, Tuple, Set, Optional, Union, Sequence, Callable, Iterable, Iterator, Any
+from Communication.core_messages import * #TODO: remove since this is just for testing!!
 
 
 class GCODEParser:
@@ -184,6 +185,12 @@ class GCODEParser:
                 else:
                     self.cmd_list = [{'type': 'M60'}]
                     return self.cmd_list
+
+            # todo: remove this message since it is only for testing
+            elif cmd == 'G5':
+                msg = SetLEDMessage(0,1)
+                return msg
+
 
             # ------------------------------------------------------------------------------------------------ #
             #                                                M                                                 #

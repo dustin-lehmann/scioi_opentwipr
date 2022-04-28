@@ -26,14 +26,14 @@ from datetime import datetime
 
 class TerminalInterface(QtWidgets.QWidget):
 
-    # define the signals that are used to communicate with the HostServer
-    user_input_signal = QtCore.pyqtSignal(str)
+    # -------------------------------------------------------Signals-------------------------------------------------
 
-    #def __init__(self, host_server):
+    # define the signals that are used to communicate with the HostServer
+    user_gcode_input_signal = QtCore.pyqtSignal(str)
+
     def __init__(self):
         super().__init__()
         self.init_terminal()
-        #print(host_server.clients_number)
 
     def init_terminal(self):
         self.main_window = QtWidgets.QMainWindow()
@@ -175,40 +175,9 @@ class TerminalInterface(QtWidgets.QWidget):
         self.gb22_horlay.addLayout(self.gb22_verlay)
 
         #signals
-        self.gb22_line.returnPressed.connect(self.process_input_from_main_terminal) #todo: hier wird terminal command abgearbeitet
+        self.gb22_line.returnPressed.connect(self.process_input_from_terminal) #todo: hier wird terminal command abgearbeitet
 
         self.main_window.setCentralWidget(self.centralwidget)
-
-
-
-
-    def gcode_execution_from_file(self, filename):
-        self.clear_main_terminal_line_edit()
-
-        if self.clients_number > 0:
-            # open and read config file
-            err = txt_handler.open('Miscellaneous/{}.gcode'.format(filename))
-            if err:
-                self.write_message_to_all_terminals(err, 'R')
-                # self.popup_invalid_input_main_terminal(err)
-                return
-
-            for processed_line in txt_handler.read():
-                if not processed_line:
-                    # yields zero in this case
-                    self.popup_invalid_input_main_terminal("Configuration file empty!")
-                    break
-
-                self.gb22_line.setText(processed_line)
-                self.process_input_from_main_terminal()
-
-            err = txt_handler.close()
-            if err:
-                self.write_message_to_all_terminals(err, 'R')
-                # self.popup_invalid_input_main_terminal(err)
-                return
-        else:
-            self.write_message_to_main_terminal("Please connect a client!", 'R')
 
     def write_gcode_documentation_to_terminal(self) -> None:
         self.clear_main_terminal_line_edit()
@@ -233,18 +202,21 @@ class TerminalInterface(QtWidgets.QWidget):
             # self.popup_invalid_input_main_terminal(err)
             return
 
-    def enter_cmd_into_main_terminal(self, cmd: str, write_to_terminal: bool = True) -> None:
-        # this function is used to externally execute g-codes
-        self.gb22_line.setText(cmd)
-        self.process_input_from_main_terminal(write_to_terminal=write_to_terminal)
+    def process_input_from_terminal(self, write_to_terminal=True):
+        """
+        -read text from line edit "gb22" and make a list
+        -this function is used as a slot to connected with the Signal that is emitted once return is pressed in Terminal
+        -the function emits another Signal with the read line text, this signal is connected to the HostServer instance
+            where the input is handled
+        :param write_to_terminal: determines if command handling is displayed on the Terminal
+        :return: nothing
+        """
 
-    def process_input_from_main_terminal(self, write_to_terminal=True):
-        # read text from line edit "gb22" and make a list
         line_text = self.gb22_line.text()
         if not line_text:
             self.popup_invalid_input_main_terminal("Please enter a command!")
             return
-        self.user_input_signal.emit(line_text)
+        self.user_gcode_input_signal.emit(line_text)
 
         self.clear_main_terminal_line_edit()
 
@@ -258,15 +230,13 @@ class TerminalInterface(QtWidgets.QWidget):
             for client_index in client_indices:
                 self.write_message_to_terminals(client_index, line_text, color)
 
-    def get_robot_ui_objects_from_combo_box(self):
-        client_indices = self.get_client_indices_from_combo_box()
-        robot_ui_objects = []
-        for index in client_indices:
-            robot_ui_objects.append(self.client_ui_list[index])
-
-        return robot_ui_objects
 
     def get_client_indices_from_combo_box(self):
+        """
+        get from combo Box to which client a Message is supposed to be sent
+        #todo: not implemented yet since I dont use a Combo box with my terminal
+        :return: index of client
+        """
         combo_text = self.get_combo_text()
         if combo_text == 'All':
             client_indices = self.get_all_client_indices()
@@ -287,6 +257,10 @@ class TerminalInterface(QtWidgets.QWidget):
         return client_indices
 
     def clear_main_terminal(self):
+        """
+        clear the input-line of main Terminal
+        :return: nothing
+        """
         self.clear_main_terminal_list_view()
         self.clear_main_terminal_line_edit()
 

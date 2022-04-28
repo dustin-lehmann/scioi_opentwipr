@@ -1,5 +1,5 @@
 from PyQt5.QtCore import QThread
-from Ui.terminal_interface import TerminalInterface
+from Ui.Interfaces.terminal_interface import TerminalInterface
 
 
 class UserIO:
@@ -19,6 +19,8 @@ class UserIO:
 
     def add_host_server_thread(self, host_server):
         """
+        -add a HostServer-Instance as a thread to the UserIo-Instance
+        - start a new QThread and move HostServer-instance
         :param host_server: already existing host-server that is moved to the newly created thread
         :return: nothing
         """
@@ -26,7 +28,7 @@ class UserIO:
         self.host_server = host_server
 
         # connect Signals from interface to host server, because otherwise it does not work -> TODO?
-        self.user_interface.user_input_signal.connect(self.host_server.process_user_input)
+        self.user_interface.user_gcode_input_signal.connect(self.host_server.process_user_input_gcode)
 
         # create new QThread
         self.thread = QThread()

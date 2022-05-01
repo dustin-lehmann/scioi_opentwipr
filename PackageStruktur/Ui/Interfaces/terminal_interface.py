@@ -7,16 +7,13 @@
 ##                                                                        ##
 ##                                                                        ##
 ############################################################################
-import string
 
-import numpy as np
-
-from Experiment.experiment import sequence_handler, experiment_handler
 from Ui.general import TerminalLineEdit
 
 # PyQt
 from PyQt5 import QtWidgets, QtCore, QtGui
 
+from Ui.Interfaces import base_interface
 
 import sys
 from IO.file_handlers import txt_handler
@@ -24,13 +21,13 @@ from IO.file_handlers import txt_handler
 from datetime import datetime
 
 
-class TerminalInterface(QtWidgets.QWidget):
-
-    # -------------------------------------------------------Signals-------------------------------------------------
-
-    # define the signals that are used to communicate with the HostServer
-    user_gcode_input_signal = QtCore.pyqtSignal(str)
-
+class TerminalInterface(QtWidgets.QWidget, base_interface.BaseInterface):
+    """
+    This class provides the Terminal Interface:
+    init_terminal is responsible for creating the graphical part
+    all the other functions are responsible for handling the input and displaying information on the Terminal
+    these functions are called as "slots" by emitted signals that they have been connected to
+    """
     def __init__(self):
         super().__init__()
         self.init_terminal()
@@ -230,11 +227,10 @@ class TerminalInterface(QtWidgets.QWidget):
             for client_index in client_indices:
                 self.write_message_to_terminals(client_index, line_text, color)
 
-
     def get_client_indices_from_combo_box(self):
         """
         get from combo Box to which client a Message is supposed to be sent
-        #todo: not implemented yet since I dont use a Combo box with my terminal
+        #todo: not implemented yet since I dont use the Combo box with my terminal
         :return: index of client
         """
         combo_text = self.get_combo_text()
@@ -246,6 +242,10 @@ class TerminalInterface(QtWidgets.QWidget):
         return client_indices
 
     def get_combo_text(self):
+        """
+        get the selected client from the combo-box
+        :return: str with the information which client is selected
+        """
         return self.gb22_combo.currentText()
 
     def get_all_client_indices(self):
@@ -284,11 +284,6 @@ class TerminalInterface(QtWidgets.QWidget):
         popup.setWindowIcon(QtGui.QIcon("Icons/icon_256.png"))
         x = popup.exec_()
 
-    def get_all_client_ui_object(self):
-        client_ui_objects = []
-        for client in self.client_ui_list:
-            if client:
-                client_ui_objects.append(client)
 
     def write_message_to_terminals(self, client_index, string, color):
         main_terminal_string = "TWIPR_{} - {}".format(client_index, string)
@@ -331,117 +326,6 @@ class TerminalInterface(QtWidgets.QWidget):
         string = "[R] TWIPR_" + str(client_index) + " - " + string
         self.write_message_to_main_terminal(string, color)
 
-    def calculate_coordinates(self, client_index):
-        delta_x = self.client_ui_list[client_index].data.x - self.client_ui_list[client_index].data.last_x
-
-        self.client_ui_list[client_index].data.x_coordinate = delta_x * np.sin(
-            self.client_ui_list[client_index].data.psi) + self.client_ui_list[client_index].data.x_coordinate
-        self.client_ui_list[client_index].data.y_coordinate = delta_x * np.cos(
-            self.client_ui_list[client_index].data.psi) + self.client_ui_list[client_index].data.y_coordinate
-
-    def plot_robot_map(self):
-        if self.gb1_cached_bg is None:
-            # cache background
-            self.gb1_cached_bg = self.gb1_canvas.copy_from_bbox(self.gb1_figure.bbox)
-        elif self.clients_number > 0:
-            # check if plot reference has been created already
-            for i in range(self.clients_max):
-                if self.client_ui_list[i] != 0:
-                    if self.client_ui_list[i].gb1_plot_ref is None:
-                        # unpack returned line list
-                        self.client_ui_list[i].gb1_plot_ref, = self.gb1_ax.plot(self.client_ui_list[i].robot.state.x,
-                                                                                self.client_ui_list[i].robot.state.y,
-                                                                                marker=".",
-                                                                                markersize=10,
-                                                                                label="TWIPR_" + str(
-                                                                                    self.client_ui_list[
-                                                                                        i].client_index),
-                                                                                animated=True)
-                        # update legend and draw everything
-                        self.gb1_legend = self.gb1_ax.legend(loc="upper right", fontsize="x-small")
-                        self.gb1_canvas.draw()
-                        # adjust background
-                        self.gb1_cached_bg = self.gb1_canvas.copy_from_bbox(self.gb1_figure.bbox)
-                        # add artist to list for plotting
-                        self.gb1_artists.append(self.client_ui_list[i].gb1_plot_ref)
-                    else:
-                        # update data if reference is available and if stop button has not been pressed
-                        if not self.gb1_but_flag_stop:
-                            self.client_ui_list[i].gb1_plot_ref.set_xdata(self.client_ui_list[i].robot.state.x)
-                            self.client_ui_list[i].gb1_plot_ref.set_ydata(self.client_ui_list[i].robot.state.y)
-                            # bring back cached background
-                            self.gb1_canvas.restore_region(self.gb1_cached_bg)
-                        # draw artists only
-                        for a in self.gb1_artists:
-                            self.gb1_figure.draw_artist(a)
-            # show on screen
-            self.gb1_canvas.blit(self.gb1_figure.bbox)
-            # process pending tasks from matplotlib event loop
-            self.gb1_canvas.flush_events()
-
-    def timeout(self):
-        # print("Time elapsed between timeouts: {:.5} ms".format(time.perf_counter_ns()/1000/1000-self.time_point))
-        # (0) log the data
-        count = 0
-        for i in range(self.clients_max):
-            if self.client_ui_list[i] != 0:
-                self.client_ui_list[i].robot.data_logs.log()
-                count += 1
-                if count == self.clients_number:
-                    break
-        # (1) update upper part of ui (robot map)
-        self.plot_robot_map()
-        # (2) update lower part of ui (in the respective robot tab)
-        # ---- check the tab that is opened in the main tabwidget currently
-        tab_name = self.check_robot_tab()
-        self.robot_timeout(tab_name)
-        # self.time_point = time.perf_counter_ns() / 1000 / 1000  # ms
-
-        # (3) process events
-        self.joystick_handler.process_events()
-
-    def check_robot_tab(self):
-        # return the index of the robot that is opened currently
-        tab_index = self.gb3_tabwidget.currentIndex()
-        if tab_index == 0:
-            # constant index
-            return "About"
-        else:
-            # indices of robot tabs above zero could be interchanged
-            # >>> check which robot has which page index
-            # (0) get page object
-            tab_object = self.gb3_tabwidget.widget(tab_index)
-            # (1) loop through following dictionary to get the client index of the respective robot
-            for key, value in self.tab_dict.items():
-                if tab_object == value:
-                    # (2) extract the client index from the string
-                    client_index = key[-1]
-            client_name = "TWIPR_" + client_index
-            return client_name
-
-    def robot_timeout(self, tab_name):
-        if tab_name == "About":
-            pass
-        elif tab_name == "TWIPR_0":
-            self.client_ui_list[0].timeout()
-        elif tab_name == "TWIPR_1":
-            self.client_ui_list[1].timeout()
-        elif tab_name == "TWIPR_2":
-            self.client_ui_list[2].timeout()
-        elif tab_name == "TWIPR_3":
-            self.client_ui_list[3].timeout()
-        elif tab_name == "TWIPR_4":
-            self.client_ui_list[4].timeout()
-        elif tab_name == "TWIPR_5":
-            self.client_ui_list[5].timeout()
-        elif tab_name == "TWIPR_6":
-            self.client_ui_list[6].timeout()
-        elif tab_name == "TWIPR_7":
-            self.client_ui_list[7].timeout()
-        elif tab_name == "TWIPR_8":
-            self.client_ui_list[8].timeout()
-        elif tab_name == "TWIPR_9":
-            self.client_ui_list[9].timeout()
 
     # Interface specific Signal connections:
     def new_connection(self, peer_address, peer_port):

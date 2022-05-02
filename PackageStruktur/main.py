@@ -23,7 +23,7 @@ def main():
     # create UserIO-object
     user_io = UserIO()
 
-    # Create HostServerThread, add to the user io object
+    #Create HostServerThread, add to the user io object
     host_server_thread = HostServer()
     user_io.add_host_server_thread(host_server_thread)
 
@@ -37,3 +37,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+

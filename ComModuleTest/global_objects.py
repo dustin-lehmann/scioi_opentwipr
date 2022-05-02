@@ -3,7 +3,7 @@ from params import *
 from estimation.positionestimation import *
 from estimation.mocap import *
 from robot import *
-from get_hostIp import GetHostIP
+from get_host_ip import GetHostIP
 
 from ctypes import Structure
 import crc8
@@ -12,11 +12,10 @@ client_incoming_queue = Queue()
 client_outgoing_queue = Queue()
 server_incoming_queue = Queue()
 server_outgoing_queue = Queue()
-Host_Address = GetHostIP().gethostip()
 
-server = Socket("Server", 'localhost', 6666)
+
 #client = Socket("Client", HOST_ADDRESS, HOST_PORT)
-client = Socket("Client", Host_Address, HOST_PORT)
+client = Socket("Client")
 
 position_estimator = PositionEstimator(FSM_LOOP_TIME / 1000, IMU_X_POS, IMU_Y_POS, IMU_Z_POS, GRAVITY,
                                        RADIUS_RIGHT_WHEEL, RADIUS_LEFT_WHEEL, WHEELBASE)

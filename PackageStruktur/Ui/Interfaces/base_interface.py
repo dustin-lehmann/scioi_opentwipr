@@ -17,9 +17,16 @@ from Communication.core_messages import BaseMessage
 
 
 class BaseInterface:
+    """
+    this class is used to enable every interface class to use same basic signals that are necessary to communicate with
+    and control the HostServer
+    """
     # -------------------------------------------------------Signals----------------------------------------------------
     # send a message that already consists of bytes directly to the selected clients
     send_byte_message_signal = pyqtSignal(int, BaseMessage)
 
     # Send a Signal, if there has been a G-Code input by the User
     user_gcode_input_signal = pyqtSignal(str)
+
+    # Signal only used for testing todo: delete once everything is properly working
+    test_signal = pyqtSignal(int, BaseMessage)

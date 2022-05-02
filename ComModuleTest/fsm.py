@@ -26,11 +26,12 @@ class FSM:
         global_values["tick"] = global_values["tick"] + 1
 
     def state_initializing(self):
+        pass
         # wait for the server socket to connect
-        while server.state is not SocketState.CONNECTED:
-            pass
+        #while server.state is not SocketState.CONNECTED:
+        #    pass
 
-        self.state = robot.ll_fsm_state
+        #self.state = robot.ll_fsm_state
 
         # Read the configuration files
         # TODO

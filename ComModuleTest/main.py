@@ -14,30 +14,38 @@ exit_main = False
 
 fsm_main = FSM()
 
+from time import sleep
+
 
 # ----------------------------------------------------------------------------------------------------------------------
+class GetIpThread(threading.Thread):
+    def __init__(self):
+        threading.Thread.__init__(self)
+
+    def run(self):
+            host_address = GetHostIP().gethostip()
+
+
 
 class ClientCommThread(threading.Thread):
     def __init__(self):
         threading.Thread.__init__(self)
+        self.host_address = 0
+        exit_recevie_ip = False
 
     def run(self):
+        get_ip_thread = GetIpThread()
+        get_ip_thread.start()
+        get_ip_thread.join(10)
+        if get_ip_thread.is_alive():
+            exit_receive_ip = True
+
+        client.address = self.host_address
+        client.port = HOST_PORT
         client.connect()
         while not exit_comm:
             client.tick()
         print("Exit Client")
-
-
-class ServerCommThread(threading.Thread):
-    def __init__(self):
-        threading.Thread.__init__(self)
-
-    def run(self):
-        server.connect()
-        while not exit_comm:
-            server.tick()
-        print("Exit Server")
-
 
 class ClientMessageHandlerThread(threading.Thread):
     def __init__(self):
@@ -74,24 +82,6 @@ class ServerMessageHandlerThread(threading.Thread):
 
 
 def main():
-    # Communication with the C++ Program
-    server.outgoing_queue = server_outgoing_queue
-    server.incoming_queue = server_incoming_queue
-    server_thread = ServerCommThread()
-    server.debug_mode = True
-    server_thread.start()
-
-    # xdot_cmd = random.sample(range(0, 1000), 100)
-    # psidot_cmd = random.sample(range(0, 1000), 100)
-
-    # while (1):
-    #     if server.state == SocketState.CONNECTED:
-    #         # msg = MSG_LL_IN_DEBUG(0, "ABCDEABCDEABCDEABCDEABCDEABCDEABCDEABCDE")
-    #         msg1 = MSG_LL_IN_CTRL_INPUT_BUFFER_VEL(0, xdot_cmd, psidot_cmd)
-    #         # msg2 = MSG_LL_IN_CTRL_INPUT(0, [1, 2], 4, 5)
-    #         send_msg_to_ll(msg1)
-    #         # send_msg_to_ll(msg2)
-    #     time.sleep(1)
 
     # Communication with the Host
     client_thread = ClientCommThread()
@@ -118,12 +108,6 @@ def main():
     client_msghndlr_thread = ClientMessageHandlerThread()
     client_msghndlr_thread.start()
 
-    # Start BBB_C
-    # os.chdir("/home/lehmann/Software/c")
-    # subprocess.run(["chmod", "a+x", "BBB_C"])
-    # subprocess.run(["./BBB_C"])
-    # os.chdir("/home/lehmann/Software/py")
-
     # Start Logging Thread
     # logging_thread = LoggingThread()
     # logging_thread.start()
@@ -145,5 +129,10 @@ def main():
     exit_comm = True
 
 
+
+
 if __name__ == '__main__':
     main()
+
+
+

@@ -26,7 +26,7 @@ class SocketState(Enum):
 
 
 class Socket:
-    def __init__(self, socket_type, address, port):
+    def __init__(self, socket_type, address=None, port=None):
         self.inputs = []
         self.outputs = []
         self.socket_type = socket_type
@@ -42,7 +42,15 @@ class Socket:
 
         self.debug_mode = False
 
-    def connect(self):
+    def connect(self,address=None, port=None):
+        if address is not None:
+            self.address = address
+        if port is not None:
+            self.port = port
+
+        if self.port is None or self.address is None:
+            return
+
         self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         if self.socket_type == "Server":
             self.print("Starting server on {:s} listening on port {:d}...".format(self.address, self.port))

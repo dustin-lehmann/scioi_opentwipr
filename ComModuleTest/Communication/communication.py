@@ -48,22 +48,12 @@ class Socket:
         if port is not None:
             self.port = port
 
-        if self.port is None or self.address is None:
+        if port is None or address is None:
             return
 
         self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        if self.socket_type == "Server":
-            self.print("Starting server on {:s} listening on port {:d}...".format(self.address, self.port))
-            self.sock.bind((self.address, self.port))
-            self.sock.listen(5)
-            clientsocket, addr = self.sock.accept()
-            clientsocket.setblocking(False)
-            self.inputs.append(clientsocket)
-            self.outputs.append(clientsocket)
-            self.state = SocketState.CONNECTED
-            self.print("New connection from {}:{}!".format(addr[0], addr[1]))
-        elif self.socket_type == "Client":
-            self.print("Trying to connect client to {:s} on port {:d}...".format(self.address, self.port))
+        if self.socket_type == "Client":
+            self.print("Trying to connect client to {:s} on port {:d}...".format(str(self.address), self.port))
             self.sock.connect((self.address, self.port))
             self.print("Connected client to {:s} on port {:d}!".format(self.address, self.port))
             self.sock.setblocking(False)
@@ -73,7 +63,7 @@ class Socket:
 
     def tick(self):
         if self.socket_type == "Client" and self.state == SocketState.NOT_CONNECTED:
-            self.connect()
+            self.connect(self.address, self.port)
 
         readable, writable, exceptional = select.select(self.inputs, self.outputs, self.inputs, 0)
 

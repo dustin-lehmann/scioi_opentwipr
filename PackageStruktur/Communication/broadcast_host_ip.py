@@ -8,8 +8,9 @@
 ##                      of address to robots                              ##
 ############################################################################
 
-from socket import gethostbyname_ex, gethostname, socket, AF_INET, SOCK_DGRAM, IPPROTO_UDP, SOL_SOCKET, SO_BROADCAST #todo: lieber gleich ganzes Modul?
+import socket
 from time import sleep
+
 
 
 class HostIp:
@@ -26,7 +27,7 @@ class HostIp:
         get all available IP-addresses and choose which one to use for further communication
         :return: nothing
         """
-        server_address = gethostbyname_ex(gethostname())
+        server_address = socket.gethostbyname_ex(socket.gethostname())
         print("IP-addresses available: ")
 
         # Show active Ip connections until one is selected that is valid
@@ -64,8 +65,8 @@ class BroadcastIpUDP:
         :return: Nothing
         """
         # AF_INET -> Internet connection, DGRAM -> UDP,
-        server = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP)
-        server.setsockopt(SOL_SOCKET, SO_BROADCAST, 1)
+        server = socket.socket(socket.AF_INET, socket.SOCK_DGRAM, socket.IPPROTO_UDP)
+        server.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
         # Set a timeout so the socket does not block
         # indefinitely when trying to receive data.
         server.settimeout(0.2)
@@ -79,5 +80,4 @@ class BroadcastIpUDP:
         print("Broadcasting of IP via UDP started")
         while True:
             server.sendto(message, ('<broadcast>', 37020))
-            print("message sent!")
             sleep(1)

@@ -1,13 +1,11 @@
 from Communication.communication import *
 from Communication.messages import *
 import threading
-from queue import Queue
-from estimation.positionestimation import *
+
 from global_objects import *
 from fsm import FSM, msg_hndlr_host, msg_hndlr_ll
-import random
-import subprocess
-import os
+from get_host_ip import GetHostIp, HostIpEvent
+from queue import Queue
 
 exit_comm = False
 exit_main = False
@@ -18,31 +16,39 @@ from time import sleep
 
 
 # ----------------------------------------------------------------------------------------------------------------------
-class GetIpThread(threading.Thread):
-    def __init__(self):
-        threading.Thread.__init__(self)
-
-    def run(self):
-            host_address = GetHostIP().gethostip()
+# class GetIpThread(threading.Thread):
+#     def __init__(self):
+#         threading.Thread.__init__(self)
+#
+#     def run(self):
+#             host_address = GetHostIP().gethostip()
 
 
 
 class ClientCommThread(threading.Thread):
+
     def __init__(self):
         threading.Thread.__init__(self)
-        self.host_address = 0
-        exit_recevie_ip = False
+        self.host_ip_event = HostIpEvent()
 
     def run(self):
-        get_ip_thread = GetIpThread()
+        """
+        -start new thread that tries to obtain the Host-Ip
+        :return:
+        """
+        get_ip_thread = threading.Thread(target=GetHostIp, args=(self.host_ip_event,), daemon= True)
         get_ip_thread.start()
-        get_ip_thread.join(10)
-        if get_ip_thread.is_alive():
-            exit_receive_ip = True
+        #wait until started thread triggers Event with timeout of 5seconds
+        self.host_ip_event.wait(5)
 
-        client.address = self.host_address
+        if get_ip_thread.is_alive():
+            print("ending the thread did not work") #todo: thread can not be killed -> problem?
+
+        client.address = self.host_ip_event.received_host_address
+
         client.port = HOST_PORT
         client.connect()
+
         while not exit_comm:
             client.tick()
         print("Exit Client")
@@ -67,18 +73,6 @@ class ServerMessageHandlerThread(threading.Thread):
             if not msg_hndlr_ll.flag_waiting:
                 msg_hndlr_ll.update()
         print("Exit Server Message Handler")
-
-
-# Experiment Thread
-# Logging Thread
-
-# class LoggingThread(threading.Thread):
-#     def __init__(self):
-#         threading.Thread.__init__(self)
-#
-#     def run(self):
-#         while not exit_comm:
-#             time.sleep(0.1)
 
 
 def main():
@@ -133,6 +127,7 @@ def main():
 
 if __name__ == '__main__':
     main()
+
 
 
 

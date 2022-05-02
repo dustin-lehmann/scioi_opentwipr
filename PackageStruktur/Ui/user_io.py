@@ -30,6 +30,7 @@ class UserIO:
         self.host_server = host_server
 
         # connect Signals from interface to host server, because otherwise it does not work -> TODO?
+        self.user_interface.send_byte_message_signal.connect(self.host_server.send_message)
         self.user_interface.user_gcode_input_signal.connect(self.host_server.process_user_input_gcode)
 
         # create new QThread
@@ -49,9 +50,10 @@ class UserIO:
         # Signals to call specific functions depending on which interface is currently used (Terminal, full GUI, ...):
 
         # Signals from host_server to interface
-        self.host_server.new_connection_signal.connect(self.user_interface.new_connection)
-
-        # Signals from interface to host Server
+        try:
+            self.host_server.new_connection_signal.connect(self.user_interface.new_connection)
+        except AttributeError:
+            pass
 
     def host_server_ended(self):
         """

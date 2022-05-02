@@ -3,7 +3,7 @@ from params import *
 from estimation.positionestimation import *
 from estimation.mocap import *
 from robot import *
-from get_host_ip import GetHostIP
+
 
 from ctypes import Structure
 import crc8
@@ -96,11 +96,7 @@ def send_msg_to_host(msg):
 
 
 def send_msg_to_ll(msg):
-    if server.state == SocketState.CONNECTED:
-        server_outgoing_queue.put_nowait(msg_builder(msg))
-        return 1
-    else:
-        return 0
+    print("message to ll")
 
 
 global_values = {"flag_fsm_state_change": -1, "flag_ctrl_state_change": -1, "tick": 0}

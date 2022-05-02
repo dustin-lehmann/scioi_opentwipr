@@ -63,8 +63,6 @@ class HostServer(QObject):
 
         super().__init__()
 
-        #self.send_byte_message_signal.connect(self.send_message)
-
         # select IP-Address that the Host Application is going to use
         host_ip = HostIp().selected_ip
 
@@ -142,7 +140,7 @@ class HostServer(QObject):
             self.client_list[client_index] = self.server.nextPendingConnection()
 
             peer_address = self.client_list[client_index].peerAddress().toString()
-            peer_port =   self.client_list[client_index].peerPort()
+            peer_port = self.client_list[client_index].peerPort()
 
             print("New connection from", peer_address, ":", peer_port, "!\n")
 

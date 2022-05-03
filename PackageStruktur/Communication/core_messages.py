@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-#----------------------------------------------------------------------------
+# ----------------------------------------------------------------------------
 # Created By  : David Stoll
 # Supervisor  : Dustin Lehmann
 # Created Date: 26/04/22
@@ -11,6 +11,7 @@
 # Module Imports
 from ctypes import c_int8, c_uint8, c_float, c_bool
 from _ctypes import Structure
+
 # ---------------------------------------------------------------------------
 # ---------------------------------------------------------------------------
 # Imports
@@ -27,10 +28,8 @@ SET_LED_ID = 1
 SET_MOTOR_ID = 2
 DEBUG_MESSAGE_ID = 3
 
+
 # ID2: currently not in use todo!!
-
-
-
 
 
 class BaseMessage:
@@ -48,6 +47,10 @@ class BaseMessage:
         self.id = -1
         self.raw_data = bytearray(0)
         self.crc8 = -1
+
+    def encode(self):
+        pass
+
 
 # -------------------------------------------------------Write messages-------------------------------------------------
 
@@ -98,10 +101,13 @@ class SetMotorMessage(WriteMessage):
 
     class MsgStructure(Structure):
         _pack_ = 1
-        _fields_ = [("dir_left", c_bool), ("speed_left", c_float),("dir_right", c_bool), ("speed_right", c_float)]
+        _fields_ = [("dir_left", c_uint8), ("speed_left", c_float), ("dir_right", c_uint8), ("speed_right", c_float)]
 
-    def __init__(self, dir_left: c_bool, speed_left: c_float, dir_right: c_int8, speed_right: c_float ):
+    def __init__(self, dir_left: int, speed_left: float, dir_right: int, speed_right: float):
         super().__init__()
+        assert (isinstance(dir_left, int) and 0 <= dir_left <= 1)
+        assert (isinstance(dir_right, int) and 0 <= dir_right <= 1)
+
         self.data = self.MsgStructure(dir_left, speed_left, dir_right, speed_right)
         self.raw_data = bytes(self.data)
 
@@ -126,18 +132,20 @@ class DebugMessage(WriteMessage):
 
     class MsgStructure(Structure):
         _pack_ = 1
-        _fields_ = [("val1", c_uint8),("val2", c_uint8),("val3", c_uint8),("val4", c_uint8),("val5", c_uint8),
+        _fields_ = [("val1", c_uint8), ("val2", c_uint8), ("val3", c_uint8), ("val4", c_uint8), ("val5", c_uint8),
                     ("val6", c_uint8), ("val7", c_uint8), ("val8", c_uint8), ("val9", c_uint8), ("val10", c_uint8)]
 
-    def __init__(self, val1: c_uint8, val2: c_uint8, val3: c_uint8, val4: c_uint8, val5: c_uint8,val6: c_uint8,
-                 val7: c_uint8,val8: c_uint8,val9: c_uint8, val10: c_uint8 ):
+    def __init__(self, val1: c_uint8, val2: c_uint8, val3: c_uint8, val4: c_uint8, val5: c_uint8, val6: c_uint8,
+                 val7: c_uint8, val8: c_uint8, val9: c_uint8, val10: c_uint8):
         super().__init__()
         self.data = self.MsgStructure(val1, val2, val3, val4, val5, val6, val7, val8, val9, val10)
         self.raw_data = bytes(self.data)
 
 
 if __name__ == "__main__":
-
     LED = SetLEDMessage(1, -1)
-    Motor = SetMotorMessage(0,-1.0,1,1.0)
-    DebugMessage = DebugMessage(0,1,2,3,4,5,6,7,8,9)
+
+    Motor = SetMotorMessage(-2, -1.0, 1, 1.0)
+
+
+    DebugMessage = DebugMessage(0, 1, 2, 3, 4, 5, 6, 7, 8, 9)

@@ -64,17 +64,6 @@ class ClientMessageHandlerThread(threading.Thread):
         print("Exit Client Message Handler")
 
 
-class ServerMessageHandlerThread(threading.Thread):
-    def __init__(self):
-        threading.Thread.__init__(self)
-
-    def run(self):
-        while not exit_comm:
-            if not msg_hndlr_ll.flag_waiting:
-                msg_hndlr_ll.update()
-        print("Exit Server Message Handler")
-
-
 def main():
 
     # Communication with the Host
@@ -86,12 +75,12 @@ def main():
 
     # Message Handler C++
     msg_hndlr_ll.msg_dictionary = msg_dictionary_ll
-    msg_hndlr_ll.incoming_queue = server_incoming_queue
-    msg_hndlr_ll.outgoing_queue = server_outgoing_queue
+    # msg_hndlr_ll.incoming_queue = server_incoming_queue
+    # msg_hndlr_ll.outgoing_queue = server_outgoing_queue
     msg_hndlr_ll.list_of_allowed_messages = ll_allowed_message_ids
     # Start Server Message Handler Thread
-    server_msghndlr_thread = ServerMessageHandlerThread()
-    server_msghndlr_thread.start()
+    # server_msghndlr_thread = ServerMessageHandlerThread()
+    # server_msghndlr_thread.start()
 
     # Message Handler Host
     msg_hndlr_host.msg_dictionary = msg_dictionary_host
@@ -109,6 +98,9 @@ def main():
     time_last_fsm = time.time_ns()
     time_last_msg = time.time_ns()
     while not exit_main:
+        #todo: Test for sending message to host REMOVE
+        # msg_test = MSG_HOST_IN_DEBUG(global_values["tick"], "test")
+        # send_msg_to_host(msg_test)
         if (time.time_ns() - time_last_fsm) > 20 * 1000 * 1000:
             time_last_fsm = time.time_ns()
             fsm_main.update()

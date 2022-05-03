@@ -10,11 +10,7 @@ import crc8
 
 client_incoming_queue = Queue()
 client_outgoing_queue = Queue()
-server_incoming_queue = Queue()
-server_outgoing_queue = Queue()
 
-
-#client = Socket("Client", HOST_ADDRESS, HOST_PORT)
 client = Socket("Client")
 
 position_estimator = PositionEstimator(FSM_LOOP_TIME / 1000, IMU_X_POS, IMU_Y_POS, IMU_Z_POS, GRAVITY,

@@ -11,6 +11,7 @@
 # Module Imports
 from ctypes import c_int8, c_uint8, c_float, c_bool
 from _ctypes import Structure
+from abc import ABC, abstractmethod
 # ---------------------------------------------------------------------------
 # ---------------------------------------------------------------------------
 # Imports

@@ -12,7 +12,9 @@
 from PyQt5.QtCore import pyqtSignal
 # ---------------------------------------------------------------------------
 # Imports
-from Communication.core_messages import BaseMessage #todo: import needed here?
+from Communication.core_messages import BaseMessage  # todo: import needed here?
+
+
 # ---------------------------------------------------------------------------
 
 
@@ -23,10 +25,13 @@ class BaseInterface:
     """
     # -------------------------------------------------------Signals----------------------------------------------------
     # send a message that already consists of bytes directly to the selected clients
-    send_byte_message_signal = pyqtSignal(int, BaseMessage)
+    send_byte_message_signal = pyqtSignal(int, BaseMessage)  # todo: still needed? use in subclasses
 
     # Send a Signal, if there has been a G-Code input by the User
     user_gcode_input_signal = pyqtSignal(str)
 
     # Signal only used for testing todo: delete once everything is properly working
     test_signal = pyqtSignal(int, BaseMessage)
+
+    def new_client_accepted(self):
+        pass

@@ -21,7 +21,8 @@ from IO.file_handlers import txt_handler
 from datetime import datetime
 
 
-class TerminalInterface(QtWidgets.QWidget, base_interface.BaseInterface):
+# class TerminalInterface(QtWidgets.QWidget, base_interface.BaseInterface):
+class TerminalInterface(base_interface.BaseInterface):
     """
     This class provides the Terminal Interface:
     init_terminal is responsible for creating the graphical part
@@ -328,7 +329,7 @@ class TerminalInterface(QtWidgets.QWidget, base_interface.BaseInterface):
 
 
     # Interface specific Signal connections:
-    def new_connection(self, peer_address, peer_port):
+    def new_client_accepted(self, peer_address, peer_port):
         string = "New Connection from {}, on Port: {}".format(peer_address, peer_port)
         self.write_message_to_main_terminal(string, "G")
 

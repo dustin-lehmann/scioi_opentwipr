@@ -49,4 +49,5 @@ class FileExecutionInterface(BaseInterface, QWidget):
                 print("message can not be sent since no client is connected")
             sleep(1)
 
-
+    def new_client_accepted(self):
+        pass

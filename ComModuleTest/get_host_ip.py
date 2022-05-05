@@ -28,8 +28,7 @@ class HostIpEvent(Event):
 
 class GetHostIp:
     def __init__(self, host_ip_event: HostIpEvent):
-        # host_ip_event.received_host_address = self.gethostip() #todo: uncommment
-        host_ip_event.received_host_address = "192.168.0.110"
+        host_ip_event.received_host_address = self.gethostip()
         host_ip_event.set()
 
     def gethostip(self):

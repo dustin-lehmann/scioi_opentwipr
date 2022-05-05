@@ -1,8 +1,10 @@
 import sys
 from PyQt5.QtWidgets import QApplication
+
 from Ui.user_io import UserIO
-from Communication.host_server import HostServer
 from Communication.core_messages import SetLEDMessage
+
+import time
 
 
 
@@ -21,15 +23,25 @@ def main():
     # pass sys.arg to allow command line arguments
     app = QApplication(sys.argv)
 
+
     # create UserIO-object
     user_io = UserIO()
 
     #Create HostServerThread, add to the user io object
-    host_server_thread = HostServer()
-    user_io.add_host_server_thread(host_server_thread)
+    # host_server_thread = HostServer()
+    # user_io.add_host_server_thread(host_server_thread)
 
-    #Todo: remove since not needed?
-    host_server_thread.finished.connect(user_io.host_server_ended)
+    def test_function():
+        while 1:
+            pass
+            if len(user_io.host_server.host.clients) < 1:
+                continue
+
+            client = user_io.host_server.clients[0]
+            user_io.host_server.host.send([1, 2, 3, 4, 5], client=client)
+            client.send([1, 2, 3, 4, 5])
+            server.host.send([1, 2, 3, 4, 5], client='green_robot')
+            time.sleep(1)
 
 
     sys.exit(app.exec())

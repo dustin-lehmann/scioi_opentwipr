@@ -19,8 +19,8 @@ slots(= functions)
 from time import sleep
 
 # pyQt
-from PyQt5.QtNetwork import QHostAddress, QTcpServer
-from PyQt5.QtCore import QObject, pyqtSignal
+from PyQt5.QtNetwork import QHostAddress, QTcpServer, QTcpSocket
+from PyQt5.QtCore import QObject, pyqtSignal as Signal, QThread
 
 #create threads
 import threading
@@ -29,6 +29,8 @@ import threading
 import crc8
 
 from typing import List, Dict, Tuple, Set, Optional, Union, Sequence, Callable, Iterable, Iterator, Any
+
+import queue
 
 # ---------------------------------------------------------------------------
 # ---------------------------------------------------------------------------
@@ -48,16 +50,57 @@ from params import SERVER_PORT, HEADER_SIZE
 from Communication.gcode_parser import gcode_parser
 # ---------------------------------------------------------------------------
 
+class Client:
+    rx_queue: queue.Queue
+    tx_queue: queue.Queue
+    socket: QTcpSocket
+    id: str
+    type: str
+    ip: str
+
+    def __init__(self, socket):
+        self.socket = socket
+        self.tx_queue = queue.Queue()
+        self.rx_queue = queue.Queue()
+        self.id = None
+        self.type = None
+        self.ip = None
+
+    def send(self, data):
+        if isinstance(data, list):
+            data = bytes(data)
+        self.tx_queue.put_nowait(data)
+
+    def rxAvailable(self):
+        return self.rx_queue.qsize()
+
+
+
 
 class HostServer(QObject):
     """
     create and configure the Host Server that is the key element of the communication
     between host(Computer) and its clients(Robots)
     """
+    ip: str
+    max_clients: int
+    num_clients: int
+    clients: list[Client]
+
+    address: QHostAddress
+    port: int
+
+    server: QTcpServer
+
+    new_client_accepted_signal = Signal(str, int)
+    finished_signal = Signal()
+
+    thread = QThread()
+
 
     # Each time this Signal is emitted there has been a new connection to the Host Server
-    new_connection_signal = pyqtSignal(str, int)
-    finished = pyqtSignal()
+    # new_connection_signal = pyqtSignal(str, int)
+    # finished = pyqtSignal()
 
     def __init__(self):
 
@@ -66,119 +109,122 @@ class HostServer(QObject):
         # select IP-Address that the Host Application is going to use
         host_ip = HostIp().selected_ip
 
+        self.max_clients = 10
+        self.num_clients = 0
+        self.clients = []
+
+        self.ip = host_ip
+
+        self.address = QHostAddress()
+        self.address.setAddress(self.ip)
+
+        self.port = 6666  # TODO: move to some other file -> params?
+        self.server = QTcpServer()
+
         # start Broadcasting of IP via UDP in separate thread
         broadcast_ip_thread = threading.Thread(target=BroadcastIpUDP, args=(host_ip,))
         broadcast_ip_thread.start()
 
-        # maximum amount of clients that can be registered
-        self.clients_max = 10
-
-        # make sure at least one client can be registered
-        assert (self.clients_max > 0)
-
-        # initialize current number of clients
-        self.clients_number = 0
-
-        # create list with as many elements as the maximum number of clients
-        self.client_list = [0] * self.clients_max
-
-        # list for robot user interfaces
-        self.client_ui_list: List[Union[int, RobotUi]] = [0] * self.clients_max
-
-        # initialize QHostAddress-class
-        self.server_address = QHostAddress()
-
-        # set Host-Server address to chosen ip
-        self.server_address.setAddress(host_ip)
-
-        # set Host-Server Port
-        self.server_port = SERVER_PORT
-
-        # construct QTcpServer Object
-        self.server = QTcpServer()
-        self.start_host_server()
-
     def run(self):
+        """
+        check the tx_queue of every registered client, if data has been placed in one of the queues -> flush
+        :return: nothing
+        """
+        while True:
+            for client in self.clients:
+                while client.tx_queue.qsize() > 0:
+                    client.socket.write(client.tx_queue.get_nowait())
+                    client.socket.flush()
+                print("hello")
 
-        while True: # todo: integrate while not exit_io
-            # make thread less CPU intensive -> better options?
-            sleep(1)
-        self.finished.emit()
 
     def start_host_server(self):
         """
         start the Host Server
         :return:
         """
-        # set maximum amount of connections QTcpServer is going to accept
-        self.server.setMaxPendingConnections(self.clients_max)
+        self.listen()
+        self.moveToThread(self.thread)
+        self.thread.started.connect(self.run)
+        self.thread.start()
 
-        # server listens for incoming connections on previously defined port and address
-        self.server.listen(self.server_address, self.server_port)
+    def listen(self):
+        self.server.setMaxPendingConnections(self.max_clients)
+        self.server.listen(self.address, self.port)
         print("Host Server is listening on", self.server.serverAddress().toString(), ":", self.server.serverPort(),
               "!\n")
-
-        # connect Signal new Connection to slot that is accepting new client and adding it to the list
         self.server.newConnection.connect(self.accept_new_client)
 
     def accept_new_client(self):
 
         # check if clients_max is already reached
-        if self.clients_number < self.clients_max:
-            # get first free index in client list and break when finished
-            # reset client_index
-            client_index = 0
-            #todo: Hiereaus verkettete Liste? -> müsste man nichtmehr durch die ganzen Clients
-            for i in range(self.clients_max):
-                if self.client_list[i] == 0:
-                    # variable is used to connect client with its functions
-                    client_index = i
-                    break
-            # increment the number of currently registered clients
-            self.clients_number += 1
-            # Next pending connection is being returned as a QTcpSocket Object
-            self.client_list[client_index] = self.server.nextPendingConnection()
+        if len(self.clients) < self.max_clients:
 
-            peer_address = self.client_list[client_index].peerAddress().toString()
-            peer_port = self.client_list[client_index].peerPort()
+            socket = self.server.nextPendingConnection()
+            client = Client(socket)
+            self.clients.append(client)
+
+            # Next pending connection is being returned as a QTcpSocket Object
+
+            peer_address = socket.peerAddress().toString()
+            peer_port = socket.peerPort()
+
+            client.ip = peer_address
 
             print("New connection from", peer_address, ":", peer_port, "!\n")
-
             # emit new connection signal with peer address and peer port to the interface
-            self.new_connection_signal.emit(peer_address, peer_port)
+            self.new_client_accepted_signal.emit(peer_address, peer_port)
 
             # currently: buffer of unlimited size
             # quick fix: the buffering number depends on the size of the biggest message
             # TODO:: NOT CHANGING THIS PARAMETER WILL CAUSE THE HL TO FAIL AT READING INCOMING MESSAGES
-            self.client_list[client_index].setReadBufferSize(100)
-
+            socket.setReadBufferSize(100)
             # connect readyRead-Signal to read_buffer function of new client
-            self.client_list[client_index].readyRead.connect(lambda: self.read_buffer(client_index))
-
+            socket.readyRead.connect(lambda: self.read_buffer(client))
             # connect error-Signal to close_socket function of new client to call after connection ended
-            self.client_list[client_index].error.connect(lambda: self.close_socket(client_index))
-
+            socket.error.connect(lambda: self.close_socket(client))
             # pause accepting new clients but keep them in connection queue
-            if self.clients_number == self.clients_max:
+            if len(self.clients) == self.max_clients:
                 self.server.pauseAccepting()
-
         else:
             # do not accept more clients than max number of clients
             pass
 
-    def send_message(self, client_index, msg):
+    def send_message(self, buffer, client: Union[Client, int, list, str] = None):
         """
-        send the message by writing into the clients buffer, which emits a signal that send the message to the client
-        :param client_index: index of client message is sent to
-        :param msg: message that is to be sent
-        :return: 1 if successful, 0 if failed
+
+        :param buffer:
+        :param client:
+        :return:
         """
-        buffer = msg_builder(msg)
-        bytes_sent = self.client_list[client_index].write(buffer)
-        if bytes_sent == -1:
-            return 0
-        else:
-            return 1
+        # change command list in buffer to bytes
+        if isinstance(buffer, list):
+            buffer = bytes(buffer)
+
+        # only one client
+        if isinstance(client, Client):
+            client.send(buffer)
+
+        # multiple clients in list
+        elif isinstance(client, list):
+            assert ([isinstance(c, Client) for c in client])
+            for c in client:
+                c.send(buffer)
+
+        # client as number (eg. "1" for client_1)
+        elif isinstance(client, int):
+            if client >= len(self.clients):
+                return
+            self.clients[client].send(buffer)
+
+        # send to all clients
+        elif client is None:
+            for c in self.clients:
+                c.send(buffer)
+
+        #client as a string (eg. "green robot")
+        elif isinstance(client, str):
+            pass  # TODO
 
     def process_user_input_gcode(self, input_text, write_to_terminal=False, recipient="All"):
         """
@@ -247,8 +293,7 @@ class HostServer(QObject):
                                 self.write_message_to_terminals(client_index, "Failed to sent message!", "R")
                         else:
                             self.popup_invalid_input_main_terminal("{} not connected!".format(recipient))
-            # clear the line edit
-            #self.gb22_line.setText("") todo: not needed because terminal does it anyway?
+
         else:
             # warning popup
             #self.popup_invalid_input_main_terminal("Please connect a client!") #TODO: use again
@@ -271,18 +316,17 @@ class HostServer(QObject):
             else:
                 pass
 
-    def close_socket(self, client_index):
+    def close_socket(self, client: Client):
         """
         close a socket once the client has disconnected
-        :param client_index: index of client in client_list
+        :param client:
         :return: nothing
         """
         # (1) handle client connection
-        self.client_list[client_index].close()
+        client.socket.close()
+        print("Client socket", client.ip, "closed and removed from the list!")
         # remove client from list
-        self.client_list[client_index] = 0
-        self.clients_number -= 1
-        print("Client socket", client_index, "closed and removed from the list!")
+        self.clients.remove(client)
         self.server.resumeAccepting()
 
     def read_buffer(self, client_index):
@@ -291,24 +335,18 @@ class HostServer(QObject):
         :param client_index: index of client in client_list
         :return:
         """
-        # first read: header including msg id byte
-        header = self.client_list[client_index].read(HEADER_SIZE)
-        if not header:
-            print("Empty header!")
-        # static length messaging -> now: dynamic length messaging
-        if not check_header(header):
-            print("Header corrupted!")
 
-        # second read: payload and tail
-        msg_len, rest_len = get_msg_len(header)
-        rest_of_msg = self.client_list[client_index].read(rest_len)
-        if not rest_of_msg:
-            print("Failed to read payload and tail!")
+        def read_buffer(self, client: Client):
+            """
+            read the client
+            :param client:
+            :return:
+            """
+            num = client.socket.bytesAvailable()
+            data = client.socket.read(num)
+            client.rx_queue.put_nowait(data)
+            # TODO: add callback function for RX -> with crc8-check
 
-        msg = header + rest_of_msg
-
-        # check crc8 byte
-        self.crc_check(client_index, msg)
 
     def crc_check(self, client_index, msg):
         """
@@ -340,5 +378,6 @@ class HostServer(QObject):
             self.write_message_to_terminals(client_index, "Received corrupted message!", "R")
 
 
-if __name__ == "__main__":
-    Host = HostServer()
+host = HostServer()
+
+

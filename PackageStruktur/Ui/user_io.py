@@ -1,6 +1,7 @@
 from PyQt5.QtCore import QThread
 from Ui.Interfaces.terminal_interface import TerminalInterface
 from Ui.Interfaces.file_exectuion_interface import FileExecutionInterface
+from Communication import host_server
 
 
 class UserIO:
@@ -12,26 +13,22 @@ class UserIO:
     """
 
     def __init__(self):
-
+        self.user_interface = None
         # select the user interface
-        self.user_interface = TerminalInterface()
+        # self.user_interface = TerminalInterface()
         # self.user_interface = FileExecutionInterface()
-        self.host_server = None
+        self.host_server = host_server.host
+        self.add_host_server_thread(self.host_server)
+        self.host_server.start_host_server()
         self.thread = None
 
-    def add_host_server_thread(self, host_server):
+    def add_host_server_thread(self, host_server: host_server.HostServer):
         """
         -add a HostServer-Instance as a thread to the UserIo-Instance
         - start a new QThread and move HostServer-instance
         :param host_server: already existing host-server that is moved to the newly created thread
         :return: nothing
         """
-
-        self.host_server = host_server
-
-        # connect Signals from interface to host server, because otherwise it does not work -> TODO?
-        self.user_interface.send_byte_message_signal.connect(self.host_server.send_message)
-        self.user_interface.user_gcode_input_signal.connect(self.host_server.process_user_input_gcode)
 
         # create new QThread
         self.thread = QThread()
@@ -41,23 +38,30 @@ class UserIO:
         # connect Signals:
 
         # Basic Signals (always do the same not dependent on the used interface):
-        self.thread.started.connect(self.host_server.run)
-        self.host_server.finished.connect(self.thread.quit)
-        self.host_server.finished.connect(self.host_server.deleteLater)
+        self.thread.started.connect(host_server.run)
         self.thread.finished.connect(self.thread.deleteLater)
         self.thread.start()
 
+        self.connect_signals_of_ui()
+
         # Signals to call specific functions depending on which interface is currently used (Terminal, full GUI, ...):
 
-        # Signals from host_server to interface
-        try:
-            self.host_server.new_connection_signal.connect(self.user_interface.new_connection)
-        except AttributeError:
-            pass
+    def connect_signals_of_ui(self):
 
-    def host_server_ended(self):
-        """
-        if signal gets emitted that the host server finished execution print to console
-        :return: nothing
-        """
-        print("host_server execution ended")
+        if self.user_interface is not None:
+            # connect Signals from interface to host server, because otherwise it does not work -> TODO?
+            self.user_interface.send_byte_message_signal.connect(self.host_server.send_message)
+            self.user_interface.user_gcode_input_signal.connect(self.host_server.process_user_input_gcode)
+
+            # Signals from Host Server to Client
+            self.host_server.new_client_accepted_signal.connect(self.user_interface)
+
+            # Signals from host_server to interface
+            try:
+                self.host_server.new_client_accepted_signal.connect(self.user_interface.new_client_accepted)
+            except AttributeError:
+                pass
+
+
+
+

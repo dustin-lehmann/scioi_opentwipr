@@ -1,7 +1,5 @@
 from Communication.communication import *
 from params import *
-from estimation.positionestimation import *
-from estimation.mocap import *
 from robot import *
 
 
@@ -13,11 +11,8 @@ client_outgoing_queue = Queue()
 
 client = Socket("Client")
 
-position_estimator = PositionEstimator(FSM_LOOP_TIME / 1000, IMU_X_POS, IMU_Y_POS, IMU_Z_POS, GRAVITY,
-                                       RADIUS_RIGHT_WHEEL, RADIUS_LEFT_WHEEL, WHEELBASE)
 
 robot = Robot()
-mocap = Mocap()
 
 
 class Message:

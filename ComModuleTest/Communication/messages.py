@@ -4,7 +4,7 @@ from ctypes import *
 import time
 from typing import List, Dict, Tuple, Optional, Union
 
-from global_objects import crc_check, msg_parser, msg_builder, robot, mocap, send_msg_to_ll, send_msg_to_host, global_values, Message, client
+from global_objects import crc_check, msg_parser, msg_builder, robot, send_msg_to_ll, send_msg_to_host, global_values, Message, client
 from Communication.communication import *
 from robot import FSM_STATE, CTRL_STATE, Robot
 from Experiment.experiment import logger, experiment_handler, sequence_handler

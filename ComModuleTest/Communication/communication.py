@@ -53,12 +53,15 @@ class Socket:
 
         self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         if self.socket_type == "Client":
-            self.print("Trying to connect client to {:s} on port {:d}...".format(str(self.address), self.port))
-            self.sock.connect((self.address, self.port))
-            self.print("Connected client to {:s} on port {:d}!".format(self.address, self.port))
-            self.sock.setblocking(False)
-            self.outputs.append(self.sock)
-            self.state = SocketState.CONNECTED
+            try:
+                self.print("Trying to connect client to {:s} on port {:d}...".format(str(self.address), self.port))
+                self.sock.connect((self.address, self.port))
+                self.print("Connected client to {:s} on port {:d}!".format(self.address, self.port))
+                self.sock.setblocking(False)
+                self.outputs.append(self.sock)
+                self.state = SocketState.CONNECTED
+            except TypeError:
+                print("no Host-IP received via UDP")
         self.inputs.append(self.sock)
 
     def tick(self):

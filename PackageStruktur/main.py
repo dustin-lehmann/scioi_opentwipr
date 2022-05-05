@@ -1,11 +1,26 @@
 import sys
+import threading
 from PyQt5.QtWidgets import QApplication
 
+from Ui.Interfaces import terminal_interface, file_exectuion_interface
 from Ui.user_io import UserIO
 from Communication.core_messages import SetLEDMessage
+from Communication import host_server
 
 import time
 
+
+def test_function():
+    while 1:
+        pass
+        if len(host_server.host.clients) < 1:
+            continue
+
+        client = host_server.host.clients[0]
+        host_server.host.send_message([1, 2, 3, 4, 5])
+        client.send_message([1, 2, 3, 4, 5])
+        host_server.host.send_message([1, 2, 3, 4, 5])
+        time.sleep(1)
 
 
 def main():
@@ -25,28 +40,24 @@ def main():
 
 
     # create UserIO-object
-    user_io = UserIO()
+    # user_interface = terminal_interface
 
     #Create HostServerThread, add to the user io object
     # host_server_thread = HostServer()
     # user_io.add_host_server_thread(host_server_thread)
 
-    def test_function():
-        while 1:
-            pass
-            if len(user_io.host_server.host.clients) < 1:
-                continue
 
-            client = user_io.host_server.clients[0]
-            user_io.host_server.host.send([1, 2, 3, 4, 5], client=client)
-            client.send([1, 2, 3, 4, 5])
-            server.host.send([1, 2, 3, 4, 5], client='green_robot')
-            time.sleep(1)
+    host_server.host.start()
+    # host_server_thread = threading.Thread(target = host_server.host.run)
+    # host_server_thread.start()
 
+    test_thread = threading.Thread(target=test_function)
+    test_thread.start()
 
     sys.exit(app.exec())
 
 
-if __name__ == "__main__":
-    main()
 
+
+if __name__ == '__main__':
+    main()

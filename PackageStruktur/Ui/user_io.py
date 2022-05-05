@@ -22,30 +22,6 @@ class UserIO:
         self.host_server.start_host_server()
         self.thread = None
 
-    def add_host_server_thread(self, host_server: host_server.HostServer):
-        """
-        -add a HostServer-Instance as a thread to the UserIo-Instance
-        - start a new QThread and move HostServer-instance
-        :param host_server: already existing host-server that is moved to the newly created thread
-        :return: nothing
-        """
-
-        # create new QThread
-        self.thread = QThread()
-        # move the host_server to the new thread
-        host_server.moveToThread(self.thread)
-
-        # connect Signals:
-
-        # Basic Signals (always do the same not dependent on the used interface):
-        self.thread.started.connect(host_server.run)
-        self.thread.finished.connect(self.thread.deleteLater)
-        self.thread.start()
-
-        self.connect_signals_of_ui()
-
-        # Signals to call specific functions depending on which interface is currently used (Terminal, full GUI, ...):
-
     def connect_signals_of_ui(self):
 
         if self.user_interface is not None:

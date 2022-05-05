@@ -50,7 +50,12 @@ from params import SERVER_PORT, HEADER_SIZE
 from Communication.gcode_parser import gcode_parser
 # ---------------------------------------------------------------------------
 
+
 class Client:
+    """
+    -represents a client that has to be connected to the Server
+    -each client has their own receive/ transmit queue that is constantly checked by a thread each
+    """
     rx_queue: queue.Queue
     tx_queue: queue.Queue
     socket: QTcpSocket
@@ -66,7 +71,7 @@ class Client:
         self.type = None
         self.ip = None
 
-    def send(self, data):
+    def send_message(self, data):
         if isinstance(data, list):
             data = bytes(data)
         self.tx_queue.put_nowait(data)
@@ -75,13 +80,16 @@ class Client:
         return self.rx_queue.qsize()
 
 
-
-
 class HostServer(QObject):
     """
-    create and configure the Host Server that is the key element of the communication
-    between host(Computer) and its clients(Robots)
+    create and configure the Host Server that is the key element of the communication between host(Computer) and its
+    clients(Robots):
+    - The HostServer launches three separate threads:
+        - broadcast IP
+        - client rx thread
+        - client tx thread
     """
+
     ip: str
     max_clients: int
     num_clients: int
@@ -96,11 +104,6 @@ class HostServer(QObject):
     finished_signal = Signal()
 
     thread = QThread()
-
-
-    # Each time this Signal is emitted there has been a new connection to the Host Server
-    # new_connection_signal = pyqtSignal(str, int)
-    # finished = pyqtSignal()
 
     def __init__(self):
 
@@ -125,23 +128,54 @@ class HostServer(QObject):
         broadcast_ip_thread = threading.Thread(target=BroadcastIpUDP, args=(host_ip,))
         broadcast_ip_thread.start()
 
+        client_tx_thread = threading.Thread(target=self.tx_thread)
+        client_tx_thread.start()
+
+        client_rx_thread = threading.Thread(target=self.rx_thread)
+        client_rx_thread.start()
+
     def run(self):
         """
         check the tx_queue of every registered client, if data has been placed in one of the queues -> flush
         :return: nothing
         """
         while True:
+            pass
+
+    def tx_thread(self):
+        """
+        - Routine the tx-Thread is going to be executed
+        - loop through the clients and check if there are any data that is supposed to be sent
+        :return: nothing
+        """
+        while True:
             for client in self.clients:
+                print("tx")
                 while client.tx_queue.qsize() > 0:
                     client.socket.write(client.tx_queue.get_nowait())
                     client.socket.flush()
-                print("hello")
 
-
-    def start_host_server(self):
+    def rx_thread(self):
         """
-        start the Host Server
-        :return:
+        - Routine the rx-Thread is going to be executed
+        - loop through the clients and check if there is any incoming data
+        :return: nothing
+        """
+        while True:
+            for client in self.clients:
+                print("rx")
+                while client.rx_queue.qsize() > 0:
+                    pass
+                    #todo:  implement message handling
+
+    def start(self):
+        """
+        start the Host Server:
+        - listen for new connections
+        - move the HostServer to a new thread where it is being executed
+        - connect the start signal of the thread to the run method of HostServer
+        - start the HostServer in the thread
+        :return: nothing
         """
         self.listen()
         self.moveToThread(self.thread)
@@ -149,6 +183,11 @@ class HostServer(QObject):
         self.thread.start()
 
     def listen(self):
+        """
+        - listen on the selected Ip for new connections
+        - connect the accept_new_client-function to the Signal that is connected once there is a new Connection
+        :return: nothing
+        """
         self.server.setMaxPendingConnections(self.max_clients)
         self.server.listen(self.address, self.port)
         print("Host Server is listening on", self.server.serverAddress().toString(), ":", self.server.serverPort(),
@@ -156,15 +195,18 @@ class HostServer(QObject):
         self.server.newConnection.connect(self.accept_new_client)
 
     def accept_new_client(self):
-
+        """
+        -handling of accepting a new client
+        -create a new client object with the socket of the newly accepted client
+        :return: nothing
+        """
         # check if clients_max is already reached
         if len(self.clients) < self.max_clients:
-
+            # Next pending connection is being returned as a QTcpSocket Object
             socket = self.server.nextPendingConnection()
             client = Client(socket)
+            #add a new client to the list
             self.clients.append(client)
-
-            # Next pending connection is being returned as a QTcpSocket Object
 
             peer_address = socket.peerAddress().toString()
             peer_port = socket.peerPort()
@@ -192,10 +234,11 @@ class HostServer(QObject):
 
     def send_message(self, buffer, client: Union[Client, int, list, str] = None):
         """
-
-        :param buffer:
-        :param client:
-        :return:
+        - send a message to selected clients
+        - it is possible to select a single client, a list of clients, all at once, or a client via its name (string)
+        :param buffer: message that has to be sent
+        :param client: which client(s) are supposed to receive the message
+        :return: nothing
         """
         # change command list in buffer to bytes
         if isinstance(buffer, list):
@@ -203,24 +246,24 @@ class HostServer(QObject):
 
         # only one client
         if isinstance(client, Client):
-            client.send(buffer)
+            client.send_message(buffer)
 
         # multiple clients in list
         elif isinstance(client, list):
             assert ([isinstance(c, Client) for c in client])
             for c in client:
-                c.send(buffer)
+                c.send_message(buffer)
 
         # client as number (eg. "1" for client_1)
         elif isinstance(client, int):
             if client >= len(self.clients):
                 return
-            self.clients[client].send(buffer)
+            self.clients[client].send_message(buffer)
 
         # send to all clients
         elif client is None:
             for c in self.clients:
-                c.send(buffer)
+                c.send_message(buffer)
 
         #client as a string (eg. "green robot")
         elif isinstance(client, str):
@@ -329,31 +372,23 @@ class HostServer(QObject):
         self.clients.remove(client)
         self.server.resumeAccepting()
 
-    def read_buffer(self, client_index):
+    def read_buffer(self, client: Client):
         """
-        read the client
-        :param client_index: index of client in client_list
+        read the clients buffer
+        :param client: buffer that is supposed to be read
         :return:
         """
-
-        def read_buffer(self, client: Client):
-            """
-            read the client
-            :param client:
-            :return:
-            """
-            num = client.socket.bytesAvailable()
-            data = client.socket.read(num)
-            client.rx_queue.put_nowait(data)
-            # TODO: add callback function for RX -> with crc8-check
-
+        num = client.socket.bytesAvailable()
+        data = client.socket.read(num)
+        client.rx_queue.put_nowait(data)
+        # TODO: add callback function for RX -> with crc8-check
 
     def crc_check(self, client_index, msg):
         """
         execute crc-check
         :param client_index: client index in client_ui_list
         :param msg: msg that is to be checked
-        :return:
+        :return: nothing
         """
         # create a new CRC8 object
         crc_object = crc8.crc8()

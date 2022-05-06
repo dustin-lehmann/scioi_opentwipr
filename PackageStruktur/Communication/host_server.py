@@ -128,9 +128,11 @@ class HostServer(QObject):
         broadcast_ip_thread = threading.Thread(target=BroadcastIpUDP, args=(host_ip,))
         broadcast_ip_thread.start()
 
+        # start transmit thread
         client_tx_thread = threading.Thread(target=self.tx_thread)
         client_tx_thread.start()
 
+        #start receive thread
         client_rx_thread = threading.Thread(target=self.rx_thread)
         client_rx_thread.start()
 
@@ -150,7 +152,6 @@ class HostServer(QObject):
         """
         while True:
             for client in self.clients:
-                print("tx")
                 while client.tx_queue.qsize() > 0:
                     client.socket.write(client.tx_queue.get_nowait())
                     client.socket.flush()
@@ -163,7 +164,6 @@ class HostServer(QObject):
         """
         while True:
             for client in self.clients:
-                print("rx")
                 while client.rx_queue.qsize() > 0:
                     pass
                     #todo:  implement message handling
@@ -205,7 +205,7 @@ class HostServer(QObject):
             # Next pending connection is being returned as a QTcpSocket Object
             socket = self.server.nextPendingConnection()
             client = Client(socket)
-            #add a new client to the list
+            # add a new client to the list
             self.clients.append(client)
 
             peer_address = socket.peerAddress().toString()

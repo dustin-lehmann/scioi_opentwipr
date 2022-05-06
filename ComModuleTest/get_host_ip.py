@@ -15,9 +15,6 @@ from threading import Event
 # Imports
 # ---------------------------------------------------------------------------
 
-
-
-
 class HostIpEvent(Event):
     """
     Custom Event that is used to share the HostIp between threads

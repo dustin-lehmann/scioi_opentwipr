@@ -21,32 +21,31 @@ def bytes_to_string(data, pos=False):
         return " ".join("0x{:02X}".format(b) for b in data)
 
 
-def chop_bytes(hex_string: str, delimiter=0x00):
+def chop_bytes(bytestring, delimiter=0x00):
     """
     chop the by cobs encoded bytestrings into separate messages return, bytearray
-    :param hex_string: bytestring that is supposed to be chopped int separate messages
+    :param bytestring: bytestring that is supposed to be chopped int separate messages
     :return: bytearray, that consists of separate messages
     """
-    chopped_msgs = {}
-    # start position of each byte
-    start = 0
-    # index used to navigate in chopped messages
-    index = 0
-
-    for i in range(len(hex_string)):
-        # check if one byte is 0
-        # if bytestring[i] == 0x00 or 'b\x00':
-        if hex_string[i] == delimiter:
-            # save each byte in array
-            chopped_msgs[index] = hex_string[start: i - 1]
-
-            start = i + 1
-            index += 1
-
-    return chopped_msgs
+    #empty list to append the messages later on
+    chopped_bytes = []
+    # # start position of each byte
+    start_byte = 0
 
 
-myMessage = core_messages.SetLEDMessage(2, 5)
+
+    data_list = list(bytestring)
+    for x in range(len(data_list)):
+        if data_list[x] == delimiter:
+            chopped_bytes.append(data_list[start_byte:(x-1)])
+            start_byte = x+1
+
+    return chopped_bytes
+
+    # return chopped_msgs
+
+
+myMessage = core_messages.SetLEDMessage(66,66)
 
 myTransMsg = core_messages.translate_msg_tx(myMessage)
 
@@ -54,10 +53,17 @@ myTransMsg = cobs.encode(myTransMsg)
 
 myTransMsg = myTransMsg.__add__(b'\x00')
 
-myTransMsg = bytes_to_string(myTransMsg)
+bytestring = myTransMsg + myTransMsg + myTransMsg
 
-hexstring = myTransMsg+ ' ' + myTransMsg + ' ' + myTransMsg
+byte_array = chop_bytes(bytestring)
 
-byte_array = chop_bytes(hexstring)
+# x: int = 1
+# mlist = [1,2,3,4,5,6]
+#
+# plist = mlist[0:4]
+
+
+
+
 
 print("ende")

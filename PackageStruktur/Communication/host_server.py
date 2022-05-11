@@ -406,6 +406,28 @@ class HostServer(QObject):
         client.rx_queue.put_nowait(data)
         # TODO: add callback function for RX -> with crc8-check
 
+    def chop_bytes(self, bytestring, delimiter=0x00):
+        """
+        chop the by cobs encoded bytestrings into separate messages return, array of integers
+        :param delimiter: delimiter that is used to seperate each message
+        :param bytestring: bytestring that is supposed to be chopped int separate messages
+        :return: list, with separate messages as elements
+        """
+        # empty list to append the messages later on
+        chopped_bytes = []
+        # # start position of each byte
+        start_byte = 0
+
+        # convert bytes into list
+        data_list = list(bytestring)
+
+        for x in range(len(data_list)):
+            if data_list[x] == delimiter:
+                chopped_bytes.append(data_list[start_byte:(x - 1)])
+                start_byte = x + 1
+
+        return chopped_bytes
+
     def crc_check(self, client_index, msg):
         """
         execute crc-check

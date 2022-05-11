@@ -5,7 +5,7 @@ from PyQt5.QtWidgets import QApplication
 from Ui.Interfaces import terminal_interface, file_exectuion_interface
 from Ui.user_io import UserIO
 from Communication.core_messages import SetLEDMessage
-from Communication import host_server
+from Communication import host_server, core_messages
 
 import time
 
@@ -15,9 +15,11 @@ def test_function():
         pass
         if len(host_server.host.clients) < 1:
             continue
-
+        msg = core_messages.SetLEDMessage(1,0)
         client = host_server.host.clients[0]
-        host_server.host.send_message([1, 2, 3, 4, 6])
+        # host_server.host.send_message([1, 2, 3, 4, 6])
+        # host_server.host.send_message(msg.raw_data)
+        host_server.host.send_message(msg, 0)
         # client.send_message([1, 2, 3, 4, 5])
         # host_server.host.send_message([1, 2, 3, 4, 5])
         time.sleep(1)

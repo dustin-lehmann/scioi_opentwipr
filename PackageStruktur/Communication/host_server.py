@@ -15,7 +15,7 @@ slots(= functions)
 """
 # ---------------------------------------------------------------------------
 # Module Imports
-
+from datetime import datetime
 from time import sleep
 
 # pyQt
@@ -39,6 +39,8 @@ from Communication.core_messages import BaseMessage
 
 # Setting and Broadcasting Host-Ip
 from Communication.broadcast_host_ip import HostIp, BroadcastIpUDP
+
+from Communication.core_messages import translate_msg_tx
 
 # Robot User-Interface
 from robot_ui import RobotUi
@@ -78,6 +80,22 @@ class Client:
 
     def rxAvailable(self):
         return self.rx_queue.qsize()
+
+
+def debug_print_rx_byte(client_ip, client_data, pos=False):
+    """
+    handle the incoming data from the client, by adding information like time/ ip to each incoming message
+    :param client_ip: ip of client
+    :param client_data: data that has been sent
+    :return: nothing
+    """
+    if pos:
+        client_data = " ".join("0x{:02X}({:d})".format(b, i) for (i, b) in enumerate(client_data))
+    else:
+        client_data = " ".join("0x{:02X}".format(b) for b in client_data)
+    time = datetime.now().strftime("%H:%M:%S:")
+    string = "{} from {}: {}".format(time, client_ip, client_data)
+    print(string) # todo: not only display of message, add callback function
 
 
 class HostServer(QObject):
@@ -132,13 +150,13 @@ class HostServer(QObject):
         client_tx_thread = threading.Thread(target=self.tx_thread)
         client_tx_thread.start()
 
-        #start receive thread
+        # start receive thread
         client_rx_thread = threading.Thread(target=self.rx_thread)
         client_rx_thread.start()
 
     def run(self):
         """
-        check the tx_queue of every registered client, if data has been placed in one of the queues -> flush
+        just the run method so that the Host Server thread can be started
         :return: nothing
         """
         while True:
@@ -146,7 +164,7 @@ class HostServer(QObject):
 
     def tx_thread(self):
         """
-        - Routine the tx-Thread is going to be executed
+        - Routine of the tx-Thread is going to be executed
         - loop through the clients and check if there are any data that is supposed to be sent
         :return: nothing
         """
@@ -158,15 +176,16 @@ class HostServer(QObject):
 
     def rx_thread(self):
         """
-        - Routine the rx-Thread is going to be executed
+        - Routine of the rx-Thread is going to be executed
         - loop through the clients and check if there is any incoming data
         :return: nothing
         """
         while True:
             for client in self.clients:
-                while client.rx_queue.qsize() > 0:
-                    pass
-                    #todo:  implement message handling
+                while client.rx_queue.qsize() > 0: # todo
+                    client_ip = client.ip
+                    client_data = client.rx_queue.get_nowait()
+                    debug_print_rx_byte(client_ip, client_data)
 
     def start(self):
         """
@@ -207,7 +226,6 @@ class HostServer(QObject):
             client = Client(socket)
             # add a new client to the list
             self.clients.append(client)
-
             peer_address = socket.peerAddress().toString()
             peer_port = socket.peerPort()
 
@@ -232,7 +250,7 @@ class HostServer(QObject):
             # do not accept more clients than max number of clients
             pass
 
-    def send_message(self, buffer, client: Union[Client, int, list, str] = None):
+    def send_message(self, msg, client: Union[Client, int, list, str] = None):
         """
         - send a message to selected clients
         - it is possible to select a single client, a list of clients, all at once, or a client via its name (string)
@@ -240,9 +258,13 @@ class HostServer(QObject):
         :param client: which client(s) are supposed to receive the message
         :return: nothing
         """
+
         # change command list in buffer to bytes
-        if isinstance(buffer, list):
-            buffer = bytes(buffer)
+        # if isinstance(msg, list): #todo: implement a way to send multiple messages at once -> even needed?
+        #     buffer = bytes(buffer)
+
+        # buffer = msg_builder(msg)
+        buffer = translate_msg_tx(msg)
 
         # only one client
         if isinstance(client, Client):
@@ -265,7 +287,7 @@ class HostServer(QObject):
             for c in self.clients:
                 c.send_message(buffer)
 
-        #client as a string (eg. "green robot")
+        # client as a string (eg. "green robot")
         elif isinstance(client, str):
             pass  # TODO
 
@@ -307,12 +329,13 @@ class HostServer(QObject):
 
         # check if any clients are registered
 
-        if self.clients_number > 0:
-            #check if message is meant to be sent to all clients
+        if len(self.clients) > 0:
+            # check if message is meant to be sent to all clients
             if recipient == "All":
-                for client_index in range(self.clients_max):
+                for client_index in range(self.max_clients):
                     if self.client_list[client_index] != 0:
-                        if self.send_message(client_index, msg) == 1:
+                        # todo: check if params msg and client_index got mixed up and are in wrong order
+                        if self.send_message(msg, client_index) == 1:
                             # write sent command to terminal
                             if write_to_terminal:
                                 self.write_sent_command_to_terminals(client_index, line_text, "Y")
@@ -322,11 +345,11 @@ class HostServer(QObject):
                             self.write_message_to_terminals(client_index, "Failed to sent message!", "R")
             #
             else:
-                for client_index in range(self.clients_max):
+                for client_index in range(self.max_clients):
                     string = "TWIPR_" + str(client_index)
-                    if recipient == string:
+                    if recipient == string: #todo: find better way to do comparison than using a string -> list object?
                         if self.client_list[client_index] != 0:  # don't send if client has disconnected
-                            if self.send_message(client_index, msg) == 1:
+                            if self.send_message(msg, client_index) == 1:
                                 # write sent command to terminal
                                 if write_to_terminal:
                                     self.write_sent_command_to_terminals(client_index, line_text, "Y")

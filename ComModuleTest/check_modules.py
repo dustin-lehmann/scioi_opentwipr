@@ -2,7 +2,7 @@ import os
 
 class UpdateModules:
     def __init__(self):
-        self.module_list_pip = ['crc8']
+        self.module_list_pip = ['crc8', 'cobs']
         self.module_list_apt = ['numpy']
         self.check_for_updates()
     def check_for_updates(self):

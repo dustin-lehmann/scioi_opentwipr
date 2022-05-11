@@ -1,11 +1,15 @@
+import Communication.core_messages
 from Communication.communication import *
-from Communication.messages import *
+from Communication.core_messages import SetLEDMessage
 import threading
+
+import cobs.cobs as cobs
 
 from global_objects import *
 from fsm import FSM, msg_hndlr_host, msg_hndlr_ll
 from get_host_ip import GetHostIp, HostIpEvent
 from queue import Queue
+from Communication.core_messages import translate_rx_message
 
 exit_comm = False
 exit_main = False
@@ -32,7 +36,7 @@ class ClientCommThread(threading.Thread):
         self.host_ip_event.wait(5)
 
         if get_ip_thread.is_alive():
-            print("ending the thread did not work")  # todo: thread can not be killed -> problem?
+            print("ending the thread did not work")
 
         client.server_address = self.host_ip_event.received_host_address
 
@@ -41,8 +45,7 @@ class ClientCommThread(threading.Thread):
 
         while not exit_comm:
             client.tick()
-            # client_outgoing_queue = 0x01, 0x02, 0x03, 0x66        todo wie schicke ich sachen raus?
-            # print(client_outgoing_queue)
+
         print("Exit Client")
 
 
@@ -55,16 +58,21 @@ def main():
     client_thread = ClientCommThread()
     client.outgoing_queue = client_outgoing_queue
     client.incoming_queue = client_incoming_queue
-    # client.outgoing_queue = Queue()
-    # client.incoming_queue = Queue()
+
     client.debug_mode = True
     client_thread.start()
-    buffer = b"0x01"
+    buffer = b"\x01\x02\x03\x04\x05"
+
+
+
 
     while 1:
         if client_incoming_queue.qsize()>0:
             print("incoming queue:")
-            print(client_incoming_queue.get_nowait())
+            incoming_bytestring = client_incoming_queue.get_nowait()
+            print(incoming_bytestring)
+            translated_message= translate_rx_message(incoming_bytestring)
+            print(translated_message)
         client_outgoing_queue.put_nowait(buffer)
 
 

@@ -9,11 +9,9 @@
 """ This module provides all the core messages that are used for communication  """
 # ---------------------------------------------------------------------------
 # Module Imports
-import sys
 from ctypes import c_int8, c_uint8, c_float, c_bool
-from _ctypes import Structure, Union
+from _ctypes import Structure
 from abc import ABC, abstractmethod
-import cobs.cobs as cobs
 # ---------------------------------------------------------------------------
 # ---------------------------------------------------------------------------
 # Imports
@@ -24,39 +22,33 @@ import cobs.cobs as cobs
 
 # ID0
 WRITE_MSG_ID = 1
-READ_MSG_ID = 2
 
-# Message specific IDs
-SET_LED_ID = [1, 0]
-SET_MOTOR_ID = [2, 0]
-DEBUG_MESSAGE_ID = [3, 0]
-# ... MessageX = [1,1]...
+# ID1
+SET_LED_ID = 1
+SET_MOTOR_ID = 2
+DEBUG_MESSAGE_ID = 3
 
-# Size of each message without the data-field (Header, Crc-8, ...) todo: change if message structure is changed!!
-BASE_MESSAGE_SIZE = 3
+# ID2: currently not in use todo!!
+
+
+
 
 
 class BaseMessage:
     """
         Base Class for every Message
     """
-    # Message Type: Read/ Write, ...
     ID0: int
-    # ID of Message 1
     ID1: int
-    # ID of Message 2
     ID2: int
-    # Message data in byte-format
     raw_data: bytes
-    # used for crc8 - check
     crc8: int
 
     def __init__(self):
-
         self.len = -1
+        self.id = -1
         self.raw_data = bytearray(0)
         self.crc8 = -1
-
 
 # -------------------------------------------------------Write messages-------------------------------------------------
 
@@ -81,7 +73,7 @@ class SetLEDMessage(WriteMessage):
     0		|uint8	|led_num	| Id of the led (1 or 2)
     1		|int8	|state		| 0: off, 1: on, -1: toggle
     """
-    ID1, ID2 = SET_LED_ID
+    ID1 = SET_LED_ID
 
     class MsgStructure(Structure):
         _pack_ = 1
@@ -103,7 +95,7 @@ class SetMotorMessage(WriteMessage):
     5		|bool	|dir_right	| Direction of right motor (0 forward, 1 backwards)
     6-9		|float	|speed_left	|
     """
-    ID1, ID2 = SET_MOTOR_ID
+    ID1 = SET_MOTOR_ID
 
     class MsgStructure(Structure):
         _pack_ = 1
@@ -131,7 +123,7 @@ class DebugMessage(WriteMessage):
     8		|uint8	|val9		|
     9		|uint8	|val10		|
     """
-    ID1, ID2 = DEBUG_MESSAGE_ID
+    ID1 = DEBUG_MESSAGE_ID
 
     class MsgStructure(Structure):
         _pack_ = 1
@@ -145,32 +137,27 @@ class DebugMessage(WriteMessage):
         self.raw_data = bytes(self.data)
 
 
-def translate_msg_tx(msg):
+def translate_rx_message(incoming_bytestring):
     """
-    - this message builder creates a buffer from a given Message so it can be sent to the client(s)
-    - Note this is a temporary test version to test the function and is based on the function implemented by Dennis
-        (general.py, message_builder())!! todo: Once basic functionality is established the complete structure has to be created here (crc-8 check, etc.)
-    - after the message has been translated to bytes it gets encoded via cobs, the host then has to decode later
-    :param msg: msg that is supposed to be translated
+    translate the incoming bytestring back into the format of a message that can then be interpreted easily
+    :param incoming_bytestring: the received bytestring
     :return: translated message
     """
-    # determine the size of data
-    payload_size = len(msg.raw_data)
-    # length of complete message
-    msg_length = BASE_MESSAGE_SIZE + payload_size
-    buffer = bytearray(msg_length)
+    rx_message = bytes_to_string(incoming_bytestring, pos=True)
+    return rx_message
 
-    buffer[0] = msg.ID0
-    buffer[1] = msg.ID1
-    buffer[2] = msg.ID2
-    buffer[3:3 + payload_size] = msg.raw_data
+def bytes_to_string(data, pos=False):
+    """
+    convert bytes to string
+    :param pos: If true print out the Byte number after each byte -> useful for debugging
+    :return: formatted string
+    """
+    if pos:
+        return " ".join("0x{:02X}({:d})".format(b, i) for (i, b) in enumerate(data))
+    else:
+        return " ".join("0x{:02X}".format(b) for b in data)
 
-    # encode buffer via cobs
-    buffer = cobs.encode(buffer)
-    # add 0x00 byte, that signals the end of the message for the recipient
-    buffer = buffer.__add__(b'\x00')
 
-    return buffer
 
 
 if __name__ == "__main__":

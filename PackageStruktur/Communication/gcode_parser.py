@@ -17,12 +17,12 @@ class GCODEParser:
         :param string: GCODE that needs to be parsed
         :return: parsed message if string is valid, otherwise return M60
         """
-        # delete old commands #todo: what is meant here?
+        # delete old commands
         self.cmd_list.clear()
         # check for G-code, if string not valid set type to M60
         first_check = re.search('(?i)^([GM][0-9]{1,3})', string)
         if first_check is None:
-            #Set message type to M60
+            # Set message type to M60
             self.cmd_list = [{'type': 'M60'}]
             return self.cmd_list
         else:

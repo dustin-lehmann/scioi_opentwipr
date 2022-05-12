@@ -1,8 +1,8 @@
 from Communication.messages import *
 from Robot.data import *
 import re
-from typing import List, Dict, Tuple, Set, Optional, Union, Sequence, Callable, Iterable, Iterator, Any
-from Communication.core_messages import * #TODO: remove since this is just for testing!!
+from typing import List, Dict, Any
+from Communication.core_communication.core_messages import * #TODO: remove since this is just for testing!!
 
 
 class GCODEParser:

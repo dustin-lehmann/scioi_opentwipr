@@ -16,6 +16,7 @@ exit_main = False
 
 from time import sleep
 
+import cobs.cobs as cobs
 from abc import ABC
 
 
@@ -62,6 +63,8 @@ def main():
     client.debug_mode = True
     client_thread.start()
     buffer = b"\x01\x02\x03\x04\x05"
+    buffer = cobs.encode(buffer)
+    buffer = buffer.__add__(b'\x00')
 
 
 
@@ -74,6 +77,7 @@ def main():
             translated_message= translate_rx_message(incoming_bytestring)
             print(translated_message)
         client_outgoing_queue.put_nowait(buffer)
+        sleep(0.1)
 
 
 

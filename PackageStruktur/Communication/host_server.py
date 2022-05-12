@@ -16,7 +16,6 @@ slots(= functions)
 # ---------------------------------------------------------------------------
 # Module Imports
 from datetime import datetime
-from time import sleep
 
 # pyQt
 from PyQt5.QtNetwork import QHostAddress, QTcpServer, QTcpSocket
@@ -28,28 +27,26 @@ import threading
 #do crc8 checks of messages
 import crc8
 
-from typing import List, Dict, Tuple, Set, Optional, Union, Sequence, Callable, Iterable, Iterator, Any
+from typing import List, Dict, Union, Any
 
 import queue
+
 
 # ---------------------------------------------------------------------------
 # ---------------------------------------------------------------------------
 # Imports
-from Communication.core_messages import BaseMessage
 
 # Setting and Broadcasting Host-Ip
 from Communication.broadcast_host_ip import HostIp, BroadcastIpUDP
 
-from Communication.core_messages import translate_msg_tx
 
 # Robot User-Interface
-from robot_ui import RobotUi
 
-from Communication.general import msg_parser, msg_builder, check_header, get_msg_len
-from Communication.messages import msg_dictionary, MSG_HOST_IN_DEBUG
+from Communication.general import msg_parser
+from Communication.messages import msg_dictionary
 from Experiment.experiment import experiment_handler, sequence_handler
-from params import SERVER_PORT, HEADER_SIZE
 from Communication.gcode_parser import gcode_parser
+from Communication import core_communication
 # ---------------------------------------------------------------------------
 
 
@@ -78,13 +75,14 @@ class Client:
             data = bytes(data)
         self.tx_queue.put_nowait(data)
 
-    def rxAvailable(self):
+    def rx_available(self):
         return self.rx_queue.qsize()
 
 
 def debug_print_rx_byte(client_ip, client_data, pos=False):
     """
     handle the incoming data from the client, by adding information like time/ ip to each incoming message
+    :param pos: if true, add number of each byte, which makes debugging easier
     :param client_ip: ip of client
     :param client_data: data that has been sent
     :return: nothing
@@ -138,6 +136,8 @@ class HostServer(QObject):
 
         self.address = QHostAddress()
         self.address.setAddress(self.ip)
+
+        self.cops_encode_rx = True
 
         self.port = 6666  # TODO: move to some other file -> params?
         self.server = QTcpServer()
@@ -254,7 +254,7 @@ class HostServer(QObject):
         """
         - send a message to selected clients
         - it is possible to select a single client, a list of clients, all at once, or a client via its name (string)
-        :param buffer: message that has to be sent
+        :param msg: message that has to be sent
         :param client: which client(s) are supposed to receive the message
         :return: nothing
         """
@@ -263,8 +263,7 @@ class HostServer(QObject):
         # if isinstance(msg, list): #todo: implement a way to send multiple messages at once -> even needed?
         #     buffer = bytes(buffer)
 
-        # buffer = msg_builder(msg)
-        buffer = translate_msg_tx(msg)
+        buffer = core_communication.hw_layer_translate_msg_tx(msg)
 
         # only one client
         if isinstance(client, Client):
@@ -397,36 +396,14 @@ class HostServer(QObject):
 
     def read_buffer(self, client: Client):
         """
-        read the clients buffer
+        read the clients buffer, slot is connected with readyRead Signal of each client -> gets called when emitted
         :param client: buffer that is supposed to be read
-        :return:
+        :return: nothing
         """
         num = client.socket.bytesAvailable()
+        # get all available bytes
         data = client.socket.read(num)
-        client.rx_queue.put_nowait(data)
-        # TODO: add callback function for RX -> with crc8-check
-
-    def chop_bytes(self, bytestring, delimiter=0x00):
-        """
-        chop the by cobs encoded bytestrings into separate messages return, array of integers
-        :param delimiter: delimiter that is used to seperate each message
-        :param bytestring: bytestring that is supposed to be chopped int separate messages
-        :return: list, with separate messages as elements
-        """
-        # empty list to append the messages later on
-        chopped_bytes = []
-        # # start position of each byte
-        start_byte = 0
-
-        # convert bytes into list
-        data_list = list(bytestring)
-
-        for x in range(len(data_list)):
-            if data_list[x] == delimiter:
-                chopped_bytes.append(data_list[start_byte:(x - 1)])
-                start_byte = x + 1
-
-        return chopped_bytes
+        core_communication.hw_layer_process_rx(data, client.rx_queue, self.cops_encode_rx)
 
     def crc_check(self, client_index, msg):
         """

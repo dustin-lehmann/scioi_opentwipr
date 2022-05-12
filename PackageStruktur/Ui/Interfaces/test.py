@@ -2,16 +2,11 @@
 Test file -> delete later
 """
 
-import cobs.cobs as cobs
-from datetime import datetime
-import queue
-
-from Communication import core_messages
-
 
 def bytes_to_string(data, pos=False):
     """
     convert bytes to string
+    :param data:
     :param pos: If true print out the Byte number after each byte -> useful for debugging
     :return: formatted string
     """
@@ -45,22 +40,8 @@ def chop_bytes(bytestring, delimiter=0x00):
     # return chopped_msgs
 
 
-myMessage = core_messages.SetLEDMessage(66,66)
+list1[1,2,3,4,5]
 
-myTransMsg = core_messages.translate_msg_tx(myMessage)
-
-myTransMsg = cobs.encode(myTransMsg)
-
-myTransMsg = myTransMsg.__add__(b'\x00')
-
-bytestring = myTransMsg + myTransMsg + myTransMsg
-
-byte_array = chop_bytes(bytestring)
-
-# x: int = 1
-# mlist = [1,2,3,4,5,6]
-#
-# plist = mlist[0:4]
 
 
 

@@ -13,14 +13,11 @@ in the file are executed
 # ---------------------------------------------------------------------------
 # Module Imports
 # QCoreApplication since there is no UI needed
-from PyQt5.QtCore import QCoreApplication
 from PyQt5.QtWidgets import QWidget
 from time import sleep
-import sys
 # ---------------------------------------------------------------------------
 # Imports 
 # ---------------------------------------------------------------------------
-from Communication.core_messages import SetLEDMessage, SetMotorMessage, DebugMessage, BaseMessage
 from Ui.Interfaces.base_interface import BaseInterface
 
 

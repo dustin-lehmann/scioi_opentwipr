@@ -17,7 +17,7 @@ def test_function():
         client = host_server.host.clients[0]
         # host_server.host.send_message([1, 2, 3, 4, 6])
         # host_server.host.send_message(msg.raw_data)
-        host_server.host.send_message(msg, 0)
+        # host_server.host.send_message(msg, 0)
         # client.send_message([1, 2, 3, 4, 5])
         # host_server.host.send_message([1, 2, 3, 4, 5])
         time.sleep(1)

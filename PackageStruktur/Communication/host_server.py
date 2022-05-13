@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-#----------------------------------------------------------------------------
+# ----------------------------------------------------------------------------
 # Created By  : David Stoll
 # Supervisor  : Dustin Lehmann
 # Created Date: 10/04/22
@@ -21,24 +21,23 @@ from datetime import datetime
 from PyQt5.QtNetwork import QHostAddress, QTcpServer, QTcpSocket
 from PyQt5.QtCore import QObject, pyqtSignal as Signal, QThread
 
-#create threads
+# create threads
 import threading
 
-#do crc8 checks of messages
+# do crc8 checks of messages
 import crc8
 
 from typing import List, Dict, Union, Any
 
 import queue
 
-
 # ---------------------------------------------------------------------------
 # ---------------------------------------------------------------------------
 # Imports
 
 # Setting and Broadcasting Host-Ip
+import Communication.core_communication.protocol_layer_core_communication
 from Communication.broadcast_host_ip import HostIp, BroadcastIpUDP
-
 
 # Robot User-Interface
 
@@ -47,6 +46,8 @@ from Communication.messages import msg_dictionary
 from Experiment.experiment import experiment_handler, sequence_handler
 from Communication.gcode_parser import gcode_parser
 from Communication import core_communication
+
+
 # ---------------------------------------------------------------------------
 
 
@@ -55,8 +56,10 @@ class Client:
     -represents a client that has to be connected to the Server
     -each client has their own receive/ transmit queue that is constantly checked by a thread each
     """
-    rx_queue: queue.Queue
-    tx_queue: queue.Queue
+    hl_rx_queue: queue.Queue
+    hl_tx_queue: queue.Queue
+    pl_rx_queue: queue.Queue
+    pl_tx_queue: queue.Queue
     socket: QTcpSocket
     id: str
     type: str
@@ -64,8 +67,10 @@ class Client:
 
     def __init__(self, socket):
         self.socket = socket
-        self.tx_queue = queue.Queue()
-        self.rx_queue = queue.Queue()
+        self.hl_tx_queue = queue.Queue()
+        self.hl_rx_queue = queue.Queue()
+        self.pl_rx_queue: queue.Queue()
+        self.pl_tx_queue: queue.Queue()
         self.id = None
         self.type = None
         self.ip = None
@@ -73,10 +78,10 @@ class Client:
     def send_message(self, data):
         if isinstance(data, list):
             data = bytes(data)
-        self.tx_queue.put_nowait(data)
+        self.hl_tx_queue.put_nowait(data)
 
     def rx_available(self):
-        return self.rx_queue.qsize()
+        return self.hl_rx_queue.qsize()
 
 
 def debug_print_rx_byte(client_ip, client_data, pos=False):
@@ -93,7 +98,7 @@ def debug_print_rx_byte(client_ip, client_data, pos=False):
         client_data = " ".join("0x{:02X}".format(b) for b in client_data)
     time = datetime.now().strftime("%H:%M:%S:")
     string = "{} from {}: {}".format(time, client_ip, client_data)
-    print(string) # todo: not only display of message, add callback function
+    print(string)  # todo: not only display of message, add callback function
 
 
 class HostServer(QObject):
@@ -170,8 +175,8 @@ class HostServer(QObject):
         """
         while True:
             for client in self.clients:
-                while client.tx_queue.qsize() > 0:
-                    client.socket.write(client.tx_queue.get_nowait())
+                while client.hl_tx_queue.qsize() > 0:
+                    client.socket.write(client.hl_tx_queue.get_nowait())
                     client.socket.flush()
 
     def rx_thread(self):
@@ -182,9 +187,9 @@ class HostServer(QObject):
         """
         while True:
             for client in self.clients:
-                while client.rx_queue.qsize() > 0: # todo
+                while client.hl_rx_queue.qsize() > 0: # todo
                     client_ip = client.ip
-                    client_data = client.rx_queue.get_nowait()
+                    client_data = client.hl_rx_queue.get_nowait()
                     debug_print_rx_byte(client_ip, client_data)
 
     def start(self):
@@ -263,7 +268,7 @@ class HostServer(QObject):
         # if isinstance(msg, list): #todo: implement a way to send multiple messages at once -> even needed?
         #     buffer = bytes(buffer)
 
-        buffer = core_communication.hw_layer_translate_msg_tx(msg)
+        buffer = Communication.core_communication.protocol_layer_core_communication.protocol_layer_translate_msg_tx(msg)
 
         # only one client
         if isinstance(client, Client):
@@ -346,7 +351,7 @@ class HostServer(QObject):
             else:
                 for client_index in range(self.max_clients):
                     string = "TWIPR_" + str(client_index)
-                    if recipient == string: #todo: find better way to do comparison than using a string -> list object?
+                    if recipient == string:  # todo: find better way to do comparison than using a string -> list object?
                         if self.client_list[client_index] != 0:  # don't send if client has disconnected
                             if self.send_message(msg, client_index) == 1:
                                 # write sent command to terminal
@@ -361,7 +366,7 @@ class HostServer(QObject):
 
         else:
             # warning popup
-            #self.popup_invalid_input_main_terminal("Please connect a client!") #TODO: use again
+            # self.popup_invalid_input_main_terminal("Please connect a client!") #TODO: use again
             print("Connect client first!")
 
     def invalid_gcode(self, user_input: str) -> None:
@@ -403,7 +408,7 @@ class HostServer(QObject):
         num = client.socket.bytesAvailable()
         # get all available bytes
         data = client.socket.read(num)
-        core_communication.hw_layer_process_rx(data, client.rx_queue, self.cops_encode_rx)
+        core_communication.hw_layer_process_data_rx(data, client.hl_rx_queue, self.cops_encode_rx)
 
     def crc_check(self, client_index, msg):
         """
@@ -436,5 +441,3 @@ class HostServer(QObject):
 
 
 host = HostServer()
-
-

@@ -21,29 +21,30 @@ from queue import Queue
 # ---------------------------------------------------------------------------
 
 
-def hw_layer_process_rx(data, rx_queue: Queue, cops_encode_rx=True):
+def hw_layer_process_data_rx(data, hw_rx_queue: Queue, cops_encode_rx=True):
     """
     process received data in form of bytes and put
     :param cops_encode_rx: if true -> data is encoded via cobs and has to be processed before put into queue
-    :param data: data that is supposed to be be put in a clients queue
-    :param rx_queue: queue that data is supposed to be put into
+    :param data: data that is supposed to be put in a clients queue
+    :param hw_rx_queue: queue that data is supposed to be put into
     :return: nothing
     """
     # if bytes are encoded by cops -> decode
     if cops_encode_rx:
-        # chop data into seperate bytes
-        byte_list = hw_layer_chop_bytes(data)
+        # chop data into separate bytes
+        byte_list = hw_layer_chop_bytes_rx(data)
         for entry in byte_list:
             # put byte into rx queue
             entry = bytes(entry)
             x = cobs.decode(entry)
-            rx_queue.put_nowait(x)
+            x = list(x) #todo: find a way to not have list -> bytes -> back to list again
+            hw_rx_queue.put_nowait(x)
     # if not encoded by cobs
     else:
-        rx_queue.put_nowait(data)
+        hw_rx_queue.put_nowait(data)
 
 
-def hw_layer_chop_bytes(bytestring, delimiter=0x00):
+def hw_layer_chop_bytes_rx(bytestring, delimiter=0x00):
     """
     chop the by cobs encoded byte-strings into separate messages, return an array of integers
     :param delimiter: delimiter that is used to separate each message
@@ -68,30 +69,22 @@ def hw_layer_chop_bytes(bytestring, delimiter=0x00):
     return chopped_bytes
 
 
-def hw_layer_translate_msg_tx(msg):
+def hw_layer_put_bytes_in_queue_tx(bytestring: bytes, hw_tx_queue: Queue, cobs_encode=True):
     """
-    - this message builder creates a buffer from a given Message so it can be sent to the client(s)
-    - Note this is a temporary test version to test the function and is based on the function implemented by Dennis
-        (general.py, message_builder())!! todo: Once basic functionality is established the complete structure has to be created here (crc-8 check, etc.)
-    - after the message has been translated to bytes it gets encoded via cobs, the host then has to decode later
-    :param msg: msg that is supposed to be translated
-    :return: translated message
+    take in byte-string, encode and put in the outgoing queue to be sent
+    :param bytestring: bytestring that is supposed to be sent later
+    :param hw_tx_queue: hardware tx queue of client
+    :param cobs_encode: if true -> encode data before sending
+    :return: nothing
     """
-    # determine the size of data
-    payload_size = len(msg.raw_data)
-    # length of complete message
-    # msg_length = BASE_MESSAGE_SIZE + payload_size
-    msg_length = 3 + payload_size
-    buffer = bytearray(msg_length)
-
-    buffer[0] = msg.ID0
-    buffer[1] = msg.ID1
-    buffer[2] = msg.ID2
-    buffer[3:3 + payload_size] = msg.raw_data
-
-    # encode buffer via cobs
-    buffer = cobs.encode(buffer)
-    # add 0x00 byte, that signals the end of the message for the recipient
-    buffer = buffer.__add__(b'\x00')
-
-    return buffer
+    if cobs_encode:
+        bytestring = cobs.encode(bytestring)
+        if hw_tx_queue.put_nowait(bytestring):
+            return True
+        else:
+            return False
+    else:
+        if hw_tx_queue.put_nowait(bytestring):
+            return True
+        else:
+            return False

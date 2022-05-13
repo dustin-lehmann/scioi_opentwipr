@@ -11,5 +11,6 @@ This package provides all the core functions that  are used for communication be
 """
 
 # Imports
-from .hw_layer_core_communication import hw_layer_process_rx, hw_layer_translate_msg_tx
+from .hw_layer_core_communication import hw_layer_process_data_rx, hw_layer_put_bytes_in_queue_tx
+from .protocol_layer_core_communication import protocol_layer_translate_msg_tx
 from .core_messages import SetLEDMessage, SetMotorMessage, DebugMessage

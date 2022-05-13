@@ -65,10 +65,10 @@ def protocol_layer_create_raw_msg_rx(byte_list: list):
 
 def protocol_layer_translate_msg_tx(msg, pl_tx_queue: Queue):
     """
-    - this message builder creates a buffer from a given Message so it can be sent to the client(s)
+    #todo: check if improved message structure is still working
+    - this message builder creates a buffer from a given Message so it can be sent
     - Note this is a temporary test version to test the function and is based on the function implemented by Dennis
-        (general.py, message_builder())!! todo: Once basic functionality is established the complete structure has to be created here (crc-8 check, etc.)
-    - after the message has been translated to bytes it gets encoded via cobs, the host then has to decode later
+        (general.py, message_builder())
     :param pl_tx_queue: protocol layer tx queue
     :param msg: msg that is supposed to be translated
     :return: translated message
@@ -89,9 +89,5 @@ def protocol_layer_translate_msg_tx(msg, pl_tx_queue: Queue):
     buffer[MsgProtocol.CRC8_POS] = msg.crc8
     buffer[MsgProtocol.DATA_START_POS:msg_length] = msg.data
 
-    # encode buffer via cobs
-    buffer = cobs.encode(buffer)
-    # add 0x00 byte, that signals the end of the message for the recipient
-    buffer = buffer.__add__(b'\x00')
 
     return buffer

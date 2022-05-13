@@ -69,22 +69,18 @@ def hw_layer_chop_bytes_rx(bytestring, delimiter=0x00):
     return chopped_bytes
 
 
-def hw_layer_put_bytes_in_queue_tx(bytestring: bytes, hw_tx_queue: Queue, cobs_encode=True):
+def hw_layer_put_bytes_in_queue_tx(bytestring: bytes, cobs_encode=True):
     """
     take in byte-string, encode and put in the outgoing queue to be sent
     :param bytestring: bytestring that is supposed to be sent later
-    :param hw_tx_queue: hardware tx queue of client
     :param cobs_encode: if true -> encode data before sending
     :return: nothing
     """
     if cobs_encode:
+        # encode via cobs
         bytestring = cobs.encode(bytestring)
-        if hw_tx_queue.put_nowait(bytestring):
-            return True
-        else:
-            return False
+        # add 0x00 byte, that signals the end of the message for the recipient
+        bytestring = bytestring.__add__(b'\x00')
+        return bytestring
     else:
-        if hw_tx_queue.put_nowait(bytestring):
-            return True
-        else:
-            return False
+        return bytestring

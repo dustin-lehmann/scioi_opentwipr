@@ -23,6 +23,9 @@ from dataclasses import dataclass
 
 @dataclass(frozen=True)
 class MsgProtocol:
+    """
+    the MsgProtocol class is responsible for the structure of messages by determining the position of each byte
+    """
     HEADER_POS: int = 0
     SRC_POS: int = 1
     ADD_0_POS: int = 2
@@ -35,6 +38,9 @@ class MsgProtocol:
 
 
 class RawMessage:
+    """
+    creates a RawMessage from input bytes that can then be interpreted from the hw-layer
+    """
     def __init__(self, byte_list: list):
         length = len(byte_list)
         self.header = byte_list[MsgProtocol.HEADER_POS]
@@ -73,10 +79,15 @@ def protocol_layer_translate_msg_tx(msg, pl_tx_queue: Queue):
     msg_length = BASE_MESSAGE_SIZE + payload_size
     buffer = bytearray(msg_length)
 
-    buffer[0] = msg.ID0
-    buffer[1] = msg.ID1
-    buffer[2] = msg.ID2
-    buffer[3:3 + payload_size] = msg.raw_data
+    buffer[MsgProtocol.HEADER_POS] = msg.header
+    buffer[MsgProtocol.SRC_POS] = msg.src
+    buffer[MsgProtocol.ADD_0_POS] = msg.add0
+    buffer[MsgProtocol.ADD_1_POS] = msg.add1
+    buffer[MsgProtocol.CMD_POS] = msg.cmd
+    buffer[MsgProtocol.MSG_POS] = msg.msg
+    buffer[MsgProtocol.LEN_POS] = msg.len
+    buffer[MsgProtocol.CRC8_POS] = msg.crc8
+    buffer[MsgProtocol.DATA_START_POS:msg_length] = msg.data
 
     # encode buffer via cobs
     buffer = cobs.encode(buffer)

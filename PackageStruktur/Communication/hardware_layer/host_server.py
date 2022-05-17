@@ -406,7 +406,7 @@ class HostServer(QObject):
         bytes_list = hw_layer_process_data_rx(data)
 
         if isinstance(bytes_list, list):
-            # loop through list put every msg-element in queue seperately
+            # loop through list put every msg-element in queue separately
             for index in range(len(bytes_list)):
                 client.rx_queue.put_nowait(bytes_list[index])
 

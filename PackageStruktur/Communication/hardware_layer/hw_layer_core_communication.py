@@ -28,19 +28,23 @@ def hw_layer_process_data_rx(data, cops_encode_rx=True):
     :param data: data that is supposed to be put in a clients queue
     :return: decoded list
     """
-    # if bytes are encoded by cops -> decode
-    if cops_encode_rx:
-        # list to store decoded messages in
-        decoded_list = []
-        # chop data into separate bytes
-        byte_list = _hw_layer_chop_bytes_rx(data)
-        # every entry is a separate message ->
-        for index in range(len(byte_list)):
-            # put byte into rx queue
-            entry = bytes(byte_list[index])
-            # decode given bytes and add the message to the list
-            decoded_list.append(list(cobs.decode(entry)))
-        return decoded_list
+    # chop data into separate bytes
+    byte_list = _hw_layer_chop_bytes_rx(data)
+    # every entry is a separate message ->
+    for index in range(len(byte_list)):
+        # normal message
+        if byte_list[index][0] == 0xAA:
+            # if bytes are encoded by cops -> decode
+            if cops_encode_rx:
+                # list to store decoded messages in
+                decoded_list = []
+                # put byte into rx queue
+                entry = bytes(byte_list[index])
+                # decode given bytes and add the message to the list
+                decoded_list.append(list(cobs.decode(entry)))
+            return decoded_list
+        elif byte_list[index][0] == 0xBB:
+            print("JSON-encoding detected") #todo: implement json-handling!
 
     # if not encoded by cobs
     else:

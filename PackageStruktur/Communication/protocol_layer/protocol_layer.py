@@ -19,7 +19,10 @@ from Communication.protocol_layer.pl_core_communication import pl_translate_msg_
 
 
 class ProtocolLayer:
-
+    """
+    The protocol layer is the middleman between HL and ML, it translates the tx/rx queues so that data can be
+    exchanged between the two other layers
+    """
     def __init__(self, host_server: HostServer):
         # variable to start protocol layer #todo
         self.pl_start = False

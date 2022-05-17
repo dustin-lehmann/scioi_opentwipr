@@ -86,7 +86,8 @@ def main():
         client_outgoing_queue.put_nowait(buffer)
         sleep(0.6) #todo: not possible to send much data
         # client_outgoing_queue.put_nowait(buffer2)
-
+        client_outgoing_queue.put_nowait(buffer2)
+        sleep(0.6)
 
 
 

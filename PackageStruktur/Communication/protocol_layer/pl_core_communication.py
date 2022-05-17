@@ -65,7 +65,6 @@ def pl_create_raw_msg_rx(bytes_msg: list):
 
 def pl_translate_msg_tx(msg):
     """
-    #todo: check if improved message structure is still working
     - this message builder creates a buffer from a given Message so it can be sent
     - Note this is a temporary test version to test the function and is based on the function implemented by Dennis
         (general.py, message_builder())
@@ -87,6 +86,5 @@ def pl_translate_msg_tx(msg):
     buffer[MsgProtocol.LEN_POS] = msg.len
     buffer[MsgProtocol.CRC8_POS] = msg.crc8
     buffer[MsgProtocol.DATA_START_POS:msg_length] = msg.data
-
 
     return buffer

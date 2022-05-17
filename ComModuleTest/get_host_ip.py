@@ -35,7 +35,6 @@ class GetHostIp:
         """
         # loop until Host-address has been received
         while self.host_ip_event.received_host_address is None:
-            print("start")
             client = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)  # UDP
             client.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
             client.bind(("", 37020))

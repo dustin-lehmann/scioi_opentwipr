@@ -2,8 +2,9 @@ import sys
 import threading
 from PyQt5.QtWidgets import QApplication
 
-from Communication import host_server
+from Communication.hardware_layer import host_server
 from Communication.core_communication import core_messages
+from Communication.protocol_layer.protocol_layer import ProtocolLayer
 
 import time
 
@@ -38,7 +39,11 @@ def main():
     # pass sys.arg to allow command line arguments
     app = QApplication(sys.argv)
 
+    # Host Server
     host_server.host.start()
+
+    # Protocol Layer
+    protocol_layer = ProtocolLayer(host_server.host)
 
     test_thread = threading.Thread(target=test_function)
     test_thread.start()

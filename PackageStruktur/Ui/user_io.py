@@ -1,7 +1,4 @@
-from PyQt5.QtCore import QThread
-from Ui.Interfaces.terminal_interface import TerminalInterface
-from Ui.Interfaces.file_exectuion_interface import FileExecutionInterface
-from Communication import host_server
+from Communication.hardware_layer import host_server
 
 
 class UserIO:

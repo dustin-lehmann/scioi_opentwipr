@@ -21,32 +21,38 @@ from queue import Queue
 # ---------------------------------------------------------------------------
 
 
-def hw_layer_process_data_rx(data, hw_rx_queue: Queue, cops_encode_rx=True):
+def hw_layer_process_data_rx(data, cops_encode_rx=True):
     """
     process received data in form of bytes and put
     :param cops_encode_rx: if true -> data is encoded via cobs and has to be processed before put into queue
     :param data: data that is supposed to be put in a clients queue
-    :param hw_rx_queue: queue that data is supposed to be put into
-    :return: nothing
+    :return: decoded list
     """
     # if bytes are encoded by cops -> decode
     if cops_encode_rx:
+        # list to store decoded messages in
+        decoded_list = []
         # chop data into separate bytes
-        byte_list = hw_layer_chop_bytes_rx(data)
-        for entry in byte_list:
+        byte_list = _hw_layer_chop_bytes_rx(data)
+        # every entry is a separate message ->
+        for index in range(len(byte_list)):
             # put byte into rx queue
-            entry = bytes(entry)
-            x = cobs.decode(entry)
-            x = list(x) #todo: find a way to not have list -> bytes -> back to list again
-            hw_rx_queue.put_nowait(x)
+            entry = bytes(byte_list[index])
+            # decode given bytes and add the message to the list
+            decoded_list.append(list(cobs.decode(entry)))
+        return decoded_list
+
     # if not encoded by cobs
     else:
-        hw_rx_queue.put_nowait(data)
+        return data # todo: depending on how the end of messages are defined choose new method to process
 
 
-def hw_layer_chop_bytes_rx(bytestring, delimiter=0x00):
+def _hw_layer_chop_bytes_rx(bytestring, delimiter=0x00):
     """
-    chop the by cobs encoded byte-strings into separate messages, return an array of integers
+    - chop input-bytes into separate message bytes
+    - check if received bytes are predefined message or json file and based on that choose further handling of msg
+    - if msg: chop the by cobs encoded byte-strings into separate messages, return an array of integers
+    - if json: for now: pass
     :param delimiter: delimiter that is used to separate each message
     :param bytestring: bytestring that is supposed to be chopped int separate messages
     :return: list, with separate messages as elements

@@ -45,7 +45,7 @@ class ClientCommThread(threading.Thread):
                 client.server_address = self.host_ip_event.received_host_address
                 # for now use global of host_port as client port
                 client.server_port = HOST_PORT
-            # ip and port of Host are known, so connection is possible
+            # ip and port of Host are known, so communication/ connection is possible
             else:
                 client.tick()
 
@@ -67,10 +67,11 @@ def main():
 
     # from here just debugging
     buffer = b"\x01\x02\x03\x04\x05\x06\x07\x08\x01"
+    buffer2 = b"\xBB\x02\x01\x05\x06\x07\x08\x01\x00"
     # print("before encoding: {}".format(buffer))
     buffer = cobs.encode(buffer)
     buffer = buffer.__add__(b'\x00')
-    # print(buffer)
+    print(buffer)
 
 
 
@@ -83,7 +84,8 @@ def main():
             translated_message= translate_rx_message(incoming_bytestring)
             print(translated_message)
         client_outgoing_queue.put_nowait(buffer)
-        sleep(0.3) #todo: not possible to send much data
+        sleep(0.6) #todo: not possible to send much data
+        # client_outgoing_queue.put_nowait(buffer2)
 
 
 

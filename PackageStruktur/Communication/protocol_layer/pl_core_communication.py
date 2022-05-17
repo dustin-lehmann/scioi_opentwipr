@@ -16,7 +16,7 @@ this module contains the functions used for protocol_layer_core communication
 # Imports 
 # ---------------------------------------------------------------------------
 from queue import Queue
-from .core_messages import BASE_MESSAGE_SIZE
+from Communication.core_communication.core_messages import BASE_MESSAGE_SIZE
 from cobs import cobs as cobs
 from dataclasses import dataclass
 
@@ -53,25 +53,24 @@ class RawMessage:
         self.data = byte_list[MsgProtocol.DATA_START_POS:length - 1]
 
 
-def protocol_layer_create_raw_msg_rx(byte_list: list):
+def pl_create_raw_msg_rx(bytes_msg: list):
     """
     create from a list of bytes a raw message that can be interpreted later
-    :param byte_list: list of bytes to create message from
+    :param bytes_msg: list of bytes to create message from
     :return: nothing
     """
-    raw_message = RawMessage(byte_list)
+    raw_message = RawMessage(bytes_msg)
     return raw_message
 
 
-def protocol_layer_translate_msg_tx(msg, pl_tx_queue: Queue):
+def pl_translate_msg_tx(msg):
     """
     #todo: check if improved message structure is still working
     - this message builder creates a buffer from a given Message so it can be sent
     - Note this is a temporary test version to test the function and is based on the function implemented by Dennis
         (general.py, message_builder())
-    :param pl_tx_queue: protocol layer tx queue
     :param msg: msg that is supposed to be translated
-    :return: translated message
+    :return: translated message as bytearray
     """
     # determine the size of data
     payload_size = len(msg.raw_data)

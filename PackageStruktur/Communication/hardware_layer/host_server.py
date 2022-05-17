@@ -36,7 +36,7 @@ import queue
 # Imports
 
 # Setting and Broadcasting Host-Ip
-import Communication.core_communication.protocol_layer_core_communication
+import Communication.protocol_layer.pl_core_communication
 from Communication.broadcast_host_ip import HostIp, BroadcastIpUDP
 
 # Robot User-Interface
@@ -45,7 +45,8 @@ from Communication.general import msg_parser
 from Communication.messages import msg_dictionary
 from Experiment.experiment import experiment_handler, sequence_handler
 from Communication.gcode_parser import gcode_parser
-from Communication import core_communication
+
+from Communication.hardware_layer.hw_layer_core_communication import hw_layer_process_data_rx
 
 
 # ---------------------------------------------------------------------------
@@ -56,10 +57,11 @@ class Client:
     -represents a client that has to be connected to the Server
     -each client has their own receive/ transmit queue that is constantly checked by a thread each
     """
-    hl_rx_queue: queue.Queue
-    hl_tx_queue: queue.Queue
-    pl_rx_queue: queue.Queue
-    pl_tx_queue: queue.Queue
+    rx_queue: queue.Queue
+    hl_pl_rx_queue: queue.Queue
+    tx_queue: queue.Queue
+    pl_ml_tx_queue = queue.Queue
+    pl_ml_rx_queue = queue.Queue
     socket: QTcpSocket
     id: str
     type: str
@@ -67,10 +69,13 @@ class Client:
 
     def __init__(self, socket):
         self.socket = socket
-        self.hl_tx_queue = queue.Queue()
-        self.hl_rx_queue = queue.Queue()
-        self.pl_rx_queue: queue.Queue()
-        self.pl_tx_queue: queue.Queue()
+        self.hl_pl_rx_queue = queue.Queue()
+        self.tx_queue = queue.Queue()
+        self.rx_queue = queue.Queue()
+        # transmit queue to message layer
+        self.pl_ml_tx_queue = queue.Queue()
+        # receive queue to message layer
+        self.pl_ml_rx_queue = queue.Queue()
         self.id = None
         self.type = None
         self.ip = None
@@ -78,10 +83,10 @@ class Client:
     def send_message(self, data):
         if isinstance(data, list):
             data = bytes(data)
-        self.hl_tx_queue.put_nowait(data)
+            self.tx_queue.put_nowait(data)
 
     def rx_available(self):
-        return self.hl_rx_queue.qsize()
+        return self.rx_queue.qsize()
 
 
 def debug_print_rx_byte(client_ip, client_data, pos=False):
@@ -98,7 +103,7 @@ def debug_print_rx_byte(client_ip, client_data, pos=False):
         client_data = " ".join("0x{:02X}".format(b) for b in client_data)
     time = datetime.now().strftime("%H:%M:%S:")
     string = "{} from {}: {}".format(time, client_ip, client_data)
-    print(string)  # todo: not only display of message, add callback function
+    print(string)
 
 
 class HostServer(QObject):
@@ -152,12 +157,12 @@ class HostServer(QObject):
         broadcast_ip_thread.start()
 
         # start transmit thread
-        client_tx_thread = threading.Thread(target=self.tx_thread)
+        client_tx_thread = threading.Thread(target=self._tx_thread)
         client_tx_thread.start()
 
         # start receive thread
-        client_rx_thread = threading.Thread(target=self.rx_thread)
-        client_rx_thread.start()
+        # client_rx_thread = threading.Thread(target=self._rx_thread)
+        # client_rx_thread.start()
 
     def run(self):
         """
@@ -167,30 +172,21 @@ class HostServer(QObject):
         while True:
             pass
 
-    def tx_thread(self):
+    def _tx_thread(self):
         """
         - Routine of the tx-Thread is going to be executed
         - loop through the clients and check if there are any data that is supposed to be sent
+        - check each queue and put data from there into the socket, flush to send data via socket
         :return: nothing
         """
         while True:
             for client in self.clients:
-                while client.hl_tx_queue.qsize() > 0:
-                    client.socket.write(client.hl_tx_queue.get_nowait())
+                # check if there is any data in queue waiting to be sent
+                while client.tx_queue.qsize() > 0:
+                    # write data from queue in socket
+                    client.socket.write(client.tx_queue.get_nowait())
+                    # send the data by using flush
                     client.socket.flush()
-
-    def rx_thread(self):
-        """
-        - Routine of the rx-Thread is going to be executed
-        - loop through the clients and check if there is any incoming data
-        :return: nothing
-        """
-        while True:
-            for client in self.clients:
-                while client.hl_rx_queue.qsize() > 0: # todo
-                    client_ip = client.ip
-                    client_data = client.hl_rx_queue.get_nowait()
-                    debug_print_rx_byte(client_ip, client_data)
 
     def start(self):
         """
@@ -239,11 +235,8 @@ class HostServer(QObject):
             print("New connection from", peer_address, ":", peer_port, "!\n")
             # emit new connection signal with peer address and peer port to the interface
             self.new_client_accepted_signal.emit(peer_address, peer_port)
-
-            # currently: buffer of unlimited size
             # quick fix: the buffering number depends on the size of the biggest message
-            # TODO:: NOT CHANGING THIS PARAMETER WILL CAUSE THE HL TO FAIL AT READING INCOMING MESSAGES
-            socket.setReadBufferSize(100)
+            socket.setReadBufferSize(10000)
             # connect readyRead-Signal to read_buffer function of new client
             socket.readyRead.connect(lambda: self.read_buffer(client))
             # connect error-Signal to close_socket function of new client to call after connection ended
@@ -257,6 +250,7 @@ class HostServer(QObject):
 
     def send_message(self, msg, client: Union[Client, int, list, str] = None):
         """
+        - todo: this method is just for the use of an interface, when the message layer is defined this function hast to be modified as well!
         - send a message to selected clients
         - it is possible to select a single client, a list of clients, all at once, or a client via its name (string)
         :param msg: message that has to be sent
@@ -268,7 +262,7 @@ class HostServer(QObject):
         # if isinstance(msg, list): #todo: implement a way to send multiple messages at once -> even needed?
         #     buffer = bytes(buffer)
 
-        buffer = Communication.core_communication.protocol_layer_core_communication.protocol_layer_translate_msg_tx(msg)
+        buffer = Communication.core_communication.protocol_layer_core_communication.pl_translate_msg_tx(msg)
 
         # only one client
         if isinstance(client, Client):
@@ -408,7 +402,13 @@ class HostServer(QObject):
         num = client.socket.bytesAvailable()
         # get all available bytes
         data = client.socket.read(num)
-        core_communication.hw_layer_process_data_rx(data, client.hl_rx_queue, self.cops_encode_rx)
+        print("data: {}".format(data))
+        bytes_list = hw_layer_process_data_rx(data)
+
+        if isinstance(bytes_list, list):
+            # loop through list put every msg-element in queue seperately
+            for index in range(len(bytes_list)):
+                client.rx_queue.put_nowait(bytes_list[index])
 
     def crc_check(self, client_index, msg):
         """

@@ -149,6 +149,7 @@ def translate_rx_message(incoming_bytestring):
 def bytes_to_string(data, pos=False):
     """
     convert bytes to string
+    :param data: data that is supposed to be converted
     :param pos: If true print out the Byte number after each byte -> useful for debugging
     :return: formatted string
     """

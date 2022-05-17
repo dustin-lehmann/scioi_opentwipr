@@ -34,18 +34,20 @@ class ClientCommThread(threading.Thread):
         get_ip_thread = threading.Thread(target=GetHostIp, args=(self.host_ip_event,), daemon=True)
         get_ip_thread.start()
         # wait until started thread triggers Event with timeout of 5seconds
-        self.host_ip_event.wait(5)
-
-        if get_ip_thread.is_alive():
-            print("ending the thread did not work")
-
-        client.server_address = self.host_ip_event.received_host_address
-
-        client.server_port = HOST_PORT
-
 
         while not exit_comm:
-            client.tick()
+            # check if any values have been received if not try again
+            if client.server_address is None or client.server_port is None:
+                flag = self.host_ip_event.wait(5)
+                if not flag:
+                    print("Timeout while trying to receive the Host-Ip (5 seconds), trying again...")
+                # set client address to the received address from the shared event
+                client.server_address = self.host_ip_event.received_host_address
+                # for now use global of host_port as client port
+                client.server_port = HOST_PORT
+            # ip and port of Host are known, so connection is possible
+            else:
+                client.tick()
 
         print("Exit Client")
 
@@ -62,9 +64,13 @@ def main():
 
     client.debug_mode = True
     client_thread.start()
-    buffer = b"\x01\x02\x03\x04\x05"
+
+    # from here just debugging
+    buffer = b"\x01\x02\x03\x04\x05\x06\x07\x08\x01"
+    # print("before encoding: {}".format(buffer))
     buffer = cobs.encode(buffer)
     buffer = buffer.__add__(b'\x00')
+    # print(buffer)
 
 
 
@@ -77,7 +83,8 @@ def main():
             translated_message= translate_rx_message(incoming_bytestring)
             print(translated_message)
         client_outgoing_queue.put_nowait(buffer)
-        sleep(0.1)
+        sleep(0.3) #todo: not possible to send much data
+
 
 
 

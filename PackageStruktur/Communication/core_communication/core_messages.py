@@ -33,7 +33,7 @@ DEBUG_MESSAGE_ID = [3, 0]
 # ... MessageX = [1,1]...
 
 # Size of each message without the data-field (Header, Crc-8, ...) todo: change if message structure is changed!!
-BASE_MESSAGE_SIZE = 3
+BASE_MESSAGE_SIZE = 8
 
 
 class BaseMessage:

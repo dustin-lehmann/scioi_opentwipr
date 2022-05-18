@@ -32,8 +32,8 @@ def hw_layer_process_data_rx(data, cops_encode_rx=True):
     byte_list = _hw_layer_chop_bytes_rx(data)
     # every entry is a separate message ->
     for index in range(len(byte_list)):
-        # normal message
-        if byte_list[index][0] == 0xAA:
+        # check seconde byte (= Header after cobs encoding), if true-> normal message
+        if byte_list[index][1] == 0xAA:
             # if bytes are encoded by cops -> decode
             if cops_encode_rx:
                 # list to store decoded messages in
@@ -42,13 +42,18 @@ def hw_layer_process_data_rx(data, cops_encode_rx=True):
                 entry = bytes(byte_list[index])
                 # decode given bytes and add the message to the list
                 decoded_list.append(list(cobs.decode(entry)))
-            return decoded_list
-        elif byte_list[index][0] == 0xBB:
-            print("JSON-encoding detected") #todo: implement json-handling!
+                return decoded_list
+            # if not encoded by cobs
+            else:
+                return byte_list  # todo: depending on how the end of messages are defined choose new method to process
 
-    # if not encoded by cobs
-    else:
-        return data # todo: depending on how the end of messages are defined choose new method to process
+        elif byte_list[index][0] == 0xBB:
+            print("JSON-encoding detected")     # todo: implement json-handling!
+
+        else:
+            print("header of byte is not valid message is not going to be processed!")
+
+
 
 
 def _hw_layer_chop_bytes_rx(bytestring, delimiter=0x00):

@@ -1,14 +1,9 @@
-import Communication.core_messages
-from Communication.communication import *
-from Communication.core_messages import SetLEDMessage
+
 import threading
 
-import cobs.cobs as cobs
 
 from global_objects import *
-from fsm import FSM, msg_hndlr_host, msg_hndlr_ll
 from get_host_ip import GetHostIp, HostIpEvent
-from queue import Queue
 from Communication.core_messages import translate_rx_message
 
 exit_comm = False
@@ -17,7 +12,6 @@ exit_main = False
 from time import sleep
 
 import cobs.cobs as cobs
-from abc import ABC
 
 
 class ClientCommThread(threading.Thread):
@@ -55,7 +49,6 @@ class ClientCommThread(threading.Thread):
 def main():
     # Communication with the Host
 
-    a = bytes([0x01,0x11,0xA0,0x24])
     # print("0x01 \t 0x02 \t 0x03")
 
     client_thread = ClientCommThread()
@@ -66,8 +59,9 @@ def main():
     client_thread.start()
 
     # from here just debugging
-    buffer = b"\x01\x02\x03\x04\x05\x06\x07\x08\x01"
-    buffer2 = b"\xBB\x02\x01\x05\x06\x07\x08\x01\x00"
+    # buffer = b"\x01\x02\x03\x04\x05\x06\x07\x08\x01"
+    list_test = [0xAA, 1, 0, 0, 4, 5, 4, 7, 8, 9, 10, 11, 12]
+    buffer= bytes(list_test)
     # print("before encoding: {}".format(buffer))
     buffer = cobs.encode(buffer)
     buffer = buffer.__add__(b'\x00')
@@ -85,9 +79,7 @@ def main():
             print(translated_message)
         client_outgoing_queue.put_nowait(buffer)
         sleep(0.6) #todo: not possible to send much data
-        # client_outgoing_queue.put_nowait(buffer2)
-        client_outgoing_queue.put_nowait(buffer2)
-        sleep(0.6)
+
 
 
 

@@ -19,6 +19,15 @@ from queue import Queue
 from Communication.core_communication.core_messages import BASE_MESSAGE_SIZE
 from cobs import cobs as cobs
 from dataclasses import dataclass
+from typing import Union
+import unittest
+
+# valid range of message parameters
+_HEADER_VALUE = [0xAA]
+_SRC_RANGE = [0, 255]
+_ADD0_RANGE = [0, 0]
+_ADD1_RANGE = [0, 0]
+_CMD_RANGE = [1, 6]
 
 
 @dataclass(frozen=True)
@@ -41,26 +50,59 @@ class RawMessage:
     """
     creates a RawMessage from input bytes that can then be interpreted from the hw-layer
     """
+    # todo: make it possible to not only create a message by byte-input -> directly setting params
     def __init__(self, byte_list: list):
         length = len(byte_list)
-        self.header = byte_list[MsgProtocol.HEADER_POS]
-        self.src = byte_list[MsgProtocol.SRC_POS]
-        self.add0 = byte_list[MsgProtocol.ADD_0_POS]
-        self.add1 = byte_list[MsgProtocol.ADD_1_POS]
-        self.cmd = byte_list[MsgProtocol.CMD_POS]
-        self.len = byte_list[MsgProtocol.LEN_POS]
-        self.crc8 = byte_list[MsgProtocol.CRC8_POS]
-        self.data = byte_list[MsgProtocol.DATA_START_POS:length - 1]
+        self.header: int = byte_list[MsgProtocol.HEADER_POS]
+        self.src: int = byte_list[MsgProtocol.SRC_POS]
+        self.add0: int = byte_list[MsgProtocol.ADD_0_POS]
+        self.add1: int = byte_list[MsgProtocol.ADD_1_POS]
+        self.cmd: int = byte_list[MsgProtocol.CMD_POS]
+        self.msg: int = byte_list[MsgProtocol.MSG_POS]
+        self.len: int = byte_list[MsgProtocol.LEN_POS]
+        self.crc8: int = byte_list[MsgProtocol.CRC8_POS]
+        self.data: int = byte_list[MsgProtocol.DATA_START_POS:length - 1]
 
 
 def pl_create_raw_msg_rx(bytes_msg: list):
     """
     create from a list of bytes a raw message that can be interpreted later
     :param bytes_msg: list of bytes to create message from
-    :return: nothing
+    :return: not
     """
     raw_message = RawMessage(bytes_msg)
-    return raw_message
+    if _check_raw_msg_rx(raw_message) is True:
+        return raw_message
+    else:
+        pass     # todo
+
+
+def _check_raw_msg_rx(msg: RawMessage):
+    """
+    conduct message checks
+    :param msg: message that is going to be validated
+    :return: true -> message valid; false -> invalid message
+    """
+    # no need to check for json here
+    if not msg.header == 0xAA:
+        print("header corrupted")
+        return False
+    if not _SRC_RANGE[0] <= msg.src <= _SRC_RANGE[1]:
+        print("SRC not in expected range, can not create raw_msg!")
+        return False
+    if not _ADD0_RANGE[0] <= msg.add0 <= _ADD0_RANGE[1]:
+        print("ADD_0 not in expected range, can not create raw_msg!")
+        return False
+    if not _ADD1_RANGE[0] <= msg.add1 <= _ADD1_RANGE[1]:
+        print("ADD1 not in expected range, can not create raw_msg!")
+        return False
+    if not _CMD_RANGE[0] <= msg.cmd <= _CMD_RANGE[1]:
+        print("CMD not in expected range, can not create raw_msg!")
+        return False
+    if not msg.len == len(msg.data):     # todo: did I get this right? or should I just look for the overhead?
+        print("length byte of message incorrect, can not create raw_msg!")
+    # todo: crc8-check!
+    return True
 
 
 def pl_translate_msg_tx(msg):

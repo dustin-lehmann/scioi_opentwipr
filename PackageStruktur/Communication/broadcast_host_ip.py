@@ -37,8 +37,8 @@ class HostIp:
                 for x in range(len(server_address[2])):
                     print(x, ":", server_address[2][x])
                 # choose which Ip is to be used
-                # self.selected_ip = server_address[2][int(input("choose the IP you want to use for communication: "))] #TODO: uncomment to make user choose
-                # choose second ip since this one happens to be the correct one
+                # self.selected_ip = server_address[2][int(input("choose the IP you want to use for communication: "))] # TODO: uncomment to make user choose
+                # automatically choose second ip since this one happens to be the correct one
                 self.selected_ip = server_address[2][0]
 
             # error handling in case input exceeds number of available IPs

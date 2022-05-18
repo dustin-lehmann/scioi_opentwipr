@@ -6,7 +6,9 @@
 # Created Date: date/month/time ..etc
 # version ='1.0'
 # ---------------------------------------------------------------------------
-""" This file represents the protocol layer of the application """
+"""
+This file represents the protocol layer of the application
+"""
 # ---------------------------------------------------------------------------
 # Module Imports 
 # ---------------------------------------------------------------------------
@@ -42,11 +44,14 @@ class ProtocolLayer:
         - loop through the clients and check if there are any data that is supposed to be sent
         :return: nothing
         """
-        for client in self.host_server.clients:
-            while client.pl_ml_tx_queue.qsize() > 0:
-                msg = client.pl_ml_tx_queue.get_nowait()
-                msg_bytearray = pl_translate_msg_tx(msg)
-                client.tx_queue.put_nowait(msg_bytearray)
+        while True:
+            for client in self.host_server.clients:
+                # check if there is anything in queue to transmit
+                while client.pl_ml_tx_queue.qsize() > 0:
+                    msg = client.pl_ml_tx_queue.get_nowait()
+                    # translate msg into bytes for hardware layer
+                    msg_bytearray = pl_translate_msg_tx(msg)
+                    client.tx_queue.put_nowait(msg_bytearray)
 
     def _pl_rx_thread_(self):
         """
@@ -54,13 +59,18 @@ class ProtocolLayer:
         - loop through the clients and check if there are any data that is supposed to be sent
         :return: nothing
         """
-        for client in self.host_server.clients:
-            # check if the hardware layer put data in the rx queue
-            while client.rx_queue.qsize() > 0:
-                # get data from rx_queue
-                bytes_msg = client.rx_queue.get_nowait()
-                raw_message = pl_create_raw_msg_rx(bytes_msg)
-                client.pl_ml_rx_queue.put_nowait(raw_message)
+        while True:
+            for client in self.host_server.clients:
+                # check if the hardware layer put data in the rx queue
+                while client.rx_queue.qsize() > 0:
+                    # get data from rx_queue
+                    bytes_msg = client.rx_queue.get_nowait()
+                    # create a new raw message from data bytes
+                    raw_message = pl_create_raw_msg_rx(bytes_msg)
+                    # put raw message in queue for message-layer
+                    client.pl_ml_rx_queue.put_nowait(raw_message)
+
+
 
 
 

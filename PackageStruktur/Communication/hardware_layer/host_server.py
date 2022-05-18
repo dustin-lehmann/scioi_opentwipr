@@ -402,7 +402,7 @@ class HostServer(QObject):
         num = client.socket.bytesAvailable()
         # get all available bytes
         data = client.socket.read(num)
-        print("data: {}".format(data))
+        debug_print_rx_byte(client.ip, data)
         bytes_list = hw_layer_process_data_rx(data)
 
         if isinstance(bytes_list, list):

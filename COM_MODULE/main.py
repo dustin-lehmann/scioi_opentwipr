@@ -77,7 +77,7 @@ def main():
             print(incoming_bytestring)
             translated_message= translate_rx_message(incoming_bytestring)
             print(translated_message)
-        client_outgoing_queue.put_nowait(buffer)
+        # client_outgoing_queue.put_nowait(buffer)
         sleep(0.6) #todo: not possible to send much data
 
 

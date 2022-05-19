@@ -114,7 +114,7 @@ def pl_translate_msg_tx(msg):
     :return: translated message as bytearray
     """
     # determine the size of data
-    payload_size = len(msg.data_struct)
+    payload_size = len(msg.data)
     # length of complete message
     msg_length = BASE_MESSAGE_SIZE + payload_size
     buffer = bytearray(msg_length)

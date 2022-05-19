@@ -43,13 +43,13 @@ class BaseMessage:
     header: int
     # ID of the source
     src : int
-    # Message Type: Read/ Write, ...
+    # ID of recipient
     add0: int
-    # ID of Message 1
+    # sub-ID -> specific inbox of device: Com-Module layer auf das es soll
     add1: int
-    # Type of the message
+    # Type of the message read/ write
     cmd: int
-    # ID of the specific message
+    # ID of the specific message -> id of message
     msg: int
     # length of the data field
     len: int
@@ -59,12 +59,16 @@ class BaseMessage:
     data: bytearray
 
 
-
     def __init__(self):
-
-        self.len = -1
+        self.header = 0xAA
+        self.src = 0
+        self.add0 = 0
+        self.add1 = 0
+        self.cmd = 0
+        self.msg = 0
+        self.len = 0
         self.data = bytearray(0)
-        self.crc8 = -1
+        self.crc8 = 0
 
 
 # -------------------------------------------------------Write messages-------------------------------------------------

@@ -50,6 +50,7 @@ class _RawMessage:
     """
     creates a RawMessage from input bytes that can then be interpreted from the hw-layer
     """
+
     # todo: make it possible to not only create a message by byte-input -> directly setting params
     def __init__(self, byte_list: list):
         length = len(byte_list)
@@ -74,7 +75,7 @@ def pl_create_raw_msg_rx(bytes_msg: list):
     if _check_raw_msg_rx(raw_message) is True:
         return raw_message
     else:
-        pass     # todo
+        pass  # todo
 
 
 def _check_raw_msg_rx(msg: _RawMessage):
@@ -99,7 +100,7 @@ def _check_raw_msg_rx(msg: _RawMessage):
     if not _CMD_RANGE[0] <= msg.cmd <= _CMD_RANGE[1]:
         print("CMD not in expected range, can not create raw_msg!")
         return False
-    if not msg.len == len(msg.data):     # todo: did I get this right? or should I just look for the overhead?
+    if not msg.len == len(msg.data):  # todo: did I get this right? or should I just look for the overhead?
         print("length byte of message incorrect, can not create raw_msg!")
     # todo: crc8-check!
     return True
@@ -130,3 +131,40 @@ def pl_translate_msg_tx(msg):
     buffer[MsgProtocol.DATA_START_POS:msg_length] = msg.data_struct
 
     return buffer
+
+
+def pl_tx_handling(pl_ml_tx_queue: Queue(), tx_queue: Queue()):
+    """
+    - Routine for checking the tx queue, if size is not 0, process msg from hl by translate it into a bytearray
+    - loop through the clients and check if there are any data that is supposed to be sent
+    :param pl_ml_tx_queue:
+    :param tx_queue:
+    :return: nothing
+    """
+    # check if there is anything in queue to transmit
+    while pl_ml_tx_queue.qsize() > 0:
+        # get data from pl_ml_tx_queue
+        msg = pl_ml_tx_queue.get_nowait()
+        # translate msg into bytes for hardware layer
+        msg_bytearray = pl_translate_msg_tx(msg)
+        if not tx_queue.put_nowait(msg_bytearray):
+            print("PL: could not put message in tx-queue for HL")
+
+
+def pl_rx_handling(rx_queue: Queue(), pl_ml_rx_queue: Queue()):
+    """
+    - Routine for checking the rx queue, if size is not 0, create a raw message from bytes_msg
+    - loop through the clients and check if there are any data that is supposed to be sent
+    :param rx_queue:
+    :param pl_ml_rx_queue:
+    :return: nothing
+    """
+
+    while rx_queue.qsize() > 0:
+        # get data from rx_queue
+        bytes_msg = rx_queue.get_nowait()
+        # create a new raw message from data bytes
+        raw_message = pl_create_raw_msg_rx(bytes_msg)
+        # put raw message in queue for message-layer
+        if not pl_ml_rx_queue.put_nowait(raw_message):
+            print("PL: could not put message in pl_ml_rx-queue for ML")

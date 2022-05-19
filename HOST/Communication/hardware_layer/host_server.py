@@ -46,7 +46,7 @@ from Communication.messages import msg_dictionary
 from Experiment.experiment import experiment_handler, sequence_handler
 from Communication.gcode_parser import gcode_parser
 
-from Communication.hardware_layer.hw_layer_core_communication import hw_layer_process_data_rx
+from Communication.hardware_layer.hw_layer_core_communication import hw_layer_process_data_rx, hl_tx_handling
 
 
 # ---------------------------------------------------------------------------
@@ -181,12 +181,14 @@ class HostServer(QObject):
         """
         while True:
             for client in self.clients:
-                # check if there is any data in queue waiting to be sent
-                while client.tx_queue.qsize() > 0:
-                    # write data from queue in socket
-                    client.socket.write(client.tx_queue.get_nowait())
-                    # send the data by using flush
-                    client.socket.flush()
+                # # check if there is any data in queue waiting to be sent
+                # while client.tx_queue.qsize() > 0:
+                #     # write data from queue in socket
+                #     client.socket.write(client.tx_queue.get_nowait())
+                #     # send the data by using flush
+                #     client.socket.flush()
+                hl_tx_handling(client.tx_queue, client.socket)
+
 
     def start(self):
         """

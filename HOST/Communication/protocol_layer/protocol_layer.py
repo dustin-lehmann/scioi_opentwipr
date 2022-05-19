@@ -17,7 +17,7 @@ import threading
 # Imports 
 # ---------------------------------------------------------------------------
 from Communication.hardware_layer.host_server import HostServer
-from Communication.protocol_layer.pl_core_communication import pl_translate_msg_tx, pl_create_raw_msg_rx
+from Communication.protocol_layer.pl_core_communication import pl_tx_handling, pl_rx_handling
 
 
 class ProtocolLayer:
@@ -40,35 +40,19 @@ class ProtocolLayer:
 
     def _pl_tx_thread(self):
         """
-        - Routine for checking the tx queue, if size is not 0, process msg from hl by translate it into a bytearray
-        - loop through the clients and check if there are any data that is supposed to be sent
-        :return: nothing
+        function used by tx_thread to handle protocol layer tx
         """
         while True:
             for client in self.host_server.clients:
-                # check if there is anything in queue to transmit
-                while client.pl_ml_tx_queue.qsize() > 0:
-                    msg = client.pl_ml_tx_queue.get_nowait()
-                    # translate msg into bytes for hardware layer
-                    msg_bytearray = pl_translate_msg_tx(msg)
-                    client.tx_queue.put_nowait(msg_bytearray)
+                pl_tx_handling(client.pl_ml_tx_queue, client.tx_queue)
 
     def _pl_rx_thread(self):
         """
-        - Routine for checking the rx queue, if size is not 0, create a raw message from bytes_msg
-        - loop through the clients and check if there are any data that is supposed to be sent
-        :return: nothing
+        function used by rx_thread to handle protocol layer rx
         """
         while True:
             for client in self.host_server.clients:
-                # check if the hardware layer put data in the rx queue
-                while client.rx_queue.qsize() > 0:
-                    # get data from rx_queue
-                    bytes_msg = client.rx_queue.get_nowait()
-                    # create a new raw message from data bytes
-                    raw_message = pl_create_raw_msg_rx(bytes_msg)
-                    # put raw message in queue for message-layer
-                    client.pl_ml_rx_queue.put_nowait(raw_message)
+                pl_rx_handling(client.rx_queue, client.pl_ml_rx_queue)
 
 
 

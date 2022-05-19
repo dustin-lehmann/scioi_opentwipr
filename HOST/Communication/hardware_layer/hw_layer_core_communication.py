@@ -14,10 +14,12 @@ this module contains the functions used for hw_layer_core communication
 import cobs.cobs as cobs
 from queue import Queue
 
+# ---------------------------------------------------------------------------
+# ---------------------------------------------------------------------------
+# Imports
+from PyQt5.QtNetwork import QTcpSocket
 
-# ---------------------------------------------------------------------------
-# ---------------------------------------------------------------------------
-# Imports 
+
 # ---------------------------------------------------------------------------
 
 
@@ -48,12 +50,10 @@ def hw_layer_process_data_rx(data, cops_encode_rx=True):
                 return byte_list  # todo: depending on how the end of messages are defined choose new method to process
 
         elif byte_list[index][0] == 0xBB:
-            print("JSON-encoding detected")     # todo: implement json-handling!
+            print("JSON-encoding detected")  # todo: implement json-handling!
 
         else:
             print("header of byte is not valid message is not going to be processed!")
-
-
 
 
 def _hw_layer_chop_bytes_rx(bytestring, delimiter=0x00):
@@ -99,3 +99,12 @@ def hw_layer_put_bytes_in_queue_tx(bytestring: bytes, cobs_encode=True):
         return bytestring
     else:
         return bytestring
+
+
+def hl_tx_handling(tx_queue: Queue(), socket: QTcpSocket):
+    # check if there is any data in queue waiting to be sent
+    while tx_queue.qsize() > 0:
+        # write data from queue in socket
+        socket.write(tx_queue.get_nowait())
+        # send the data by using flush
+        socket.flush()

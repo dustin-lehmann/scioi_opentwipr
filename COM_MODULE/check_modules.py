@@ -1,5 +1,9 @@
 import os
 
+"""
+this module checks automatically if any of the needed files are not downloaded yet and installs those missing
+"""
+
 class UpdateModules:
     def __init__(self):
         self.module_list_pip = ['crc8', 'cobs']

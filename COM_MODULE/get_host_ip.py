@@ -6,7 +6,7 @@
 # Created Date: date/month/time ..etc
 # version ='1.0'
 # ---------------------------------------------------------------------------
-""" This Module contains the base interface class that provides all the essential Signals for an Interface """
+""" This Module is responsible for receiving the Host-Server Ip via UDP """
 # ---------------------------------------------------------------------------
 # Module Imports
 import socket

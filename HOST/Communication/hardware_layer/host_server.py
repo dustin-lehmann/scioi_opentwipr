@@ -43,7 +43,6 @@ from Communication.broadcast_host_ip import HostIp, BroadcastIpUDP
 
 from Communication.general import msg_parser
 from Communication.messages import msg_dictionary
-from Experiment.experiment import experiment_handler, sequence_handler
 from Communication.gcode_parser import gcode_parser
 
 from Communication.hardware_layer.hw_layer_core_communication import hw_layer_process_data_rx, hl_tx_handling
@@ -411,35 +410,6 @@ class HostServer(QObject):
             # loop through list put every msg-element in queue separately
             for index in range(len(bytes_list)):
                 client.rx_queue.put_nowait(bytes_list[index])
-
-    def crc_check(self, client_index, msg):
-        """
-        execute crc-check
-        :param client_index: client index in client_ui_list
-        :param msg: msg that is to be checked
-        :return: nothing
-        """
-        # create a new CRC8 object
-        crc_object = crc8.crc8()
-        crc_object.update(msg)
-        crc_byte = crc_object.digest()
-        # and check the received message
-        if crc_byte == b'\x00':
-            # CRC8 check successful -> create abstract message object from bytearray
-            msg = msg_parser(msg)
-            # print("New message has been received successfully . . . handling message!\n")
-            if msg.id in msg_dictionary:
-                msg_cast = msg_dictionary[msg.id](msg)
-                msg_cast.handler(self.client_ui_list[client_index], experiment_handler, sequence_handler)
-                # show received message if wanted
-                terminal_string = msg_cast.get_string()
-                terminal_color = msg_cast.get_color()
-                if terminal_string:
-                    self.write_received_msg_to_terminals(client_index, terminal_string, terminal_color)
-            else:
-                self.write_message_to_terminals(client_index, "Received message with unknown message id!", "R")
-        else:
-            self.write_message_to_terminals(client_index, "Received corrupted message!", "R")
 
 
 host = HostServer()

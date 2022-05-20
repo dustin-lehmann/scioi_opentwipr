@@ -1,8 +1,8 @@
-
 import threading
 
 
-from global_objects import *
+from Communication.hw_layer import Socket
+from queue import Queue
 from get_host_ip import GetHostIp, HostIpEvent
 from Communication.core_messages import translate_rx_message
 
@@ -13,6 +13,10 @@ from time import sleep
 
 import cobs.cobs as cobs
 
+client = Socket("Client")
+client_incoming_queue = Queue()
+client_outgoing_queue = Queue()
+HOST_PORT = 6666
 
 class ClientCommThread(threading.Thread):
 

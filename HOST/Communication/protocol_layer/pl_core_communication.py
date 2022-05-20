@@ -147,8 +147,7 @@ def pl_tx_handling(pl_ml_tx_queue: Queue(), tx_queue: Queue()):
         msg = pl_ml_tx_queue.get_nowait()
         # translate msg into bytes for hardware layer
         msg_bytearray = pl_translate_msg_tx(msg)
-        if not tx_queue.put_nowait(msg_bytearray):
-            print("PL: could not put message in tx-queue for HL")
+        tx_queue.put_nowait(msg_bytearray)
 
 
 def pl_rx_handling(rx_queue: Queue(), pl_ml_rx_queue: Queue()):
@@ -166,5 +165,5 @@ def pl_rx_handling(rx_queue: Queue(), pl_ml_rx_queue: Queue()):
         # create a new raw message from data bytes
         raw_message = pl_create_raw_msg_rx(bytes_msg)
         # put raw message in queue for message-layer
-        if not pl_ml_rx_queue.put_nowait(raw_message):
-            print("PL: could not put message in pl_ml_rx-queue for ML")
+        pl_ml_rx_queue.put_nowait(raw_message)
+

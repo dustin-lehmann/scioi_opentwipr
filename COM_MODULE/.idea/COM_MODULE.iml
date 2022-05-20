@@ -5,4 +5,8 @@
     <orderEntry type="jdk" jdkName="Remote Python 3.9.2 (sftp://pi@com4-test:22/usr/bin/python3)" jdkType="Python SDK" />
     <orderEntry type="sourceFolder" forTests="false" />
   </component>
+  <component name="PyDocumentationSettings">
+    <option name="format" value="NUMPY" />
+    <option name="myDocStringFormat" value="NumPy" />
+  </component>
 </module>

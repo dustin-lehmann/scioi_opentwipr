@@ -1,13 +1,31 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+# ----------------------------------------------------------------------------
+# Created By  : David Stoll
+# Supervisor  : Dustin Lehmann
+# Created Date: date/month/time ..etc
+# version ='1.0'
+# ---------------------------------------------------------------------------
+""" This Module is responsible for receiving the Host-Server Ip via UDP """
+# ---------------------------------------------------------------------------
+# Module Imports
 from enum import Enum
-from typing import List
 import select
 import socket
 from queue import Queue
-import time
+# ---------------------------------------------------------------------------
+# Imports
+# ---------------------------------------------------------------------------
+
+
+
 
 
 
 class SocketState(Enum):
+    """
+    class to describe the current state of socket
+    """
     NOT_CONNECTED = 0
     CONNECTED = 1
 
@@ -19,7 +37,6 @@ class Socket:
         self.server_address = server_address
         self.server_port = server_port
         self.state = SocketState(0)
-        self.flag_handshake = 0
         self.sock: socket.socket = None
 
         self.outgoing_queue = Queue()
@@ -51,11 +68,13 @@ class Socket:
 
         readable, writable, exceptional  = select.select(self.input_connections, self.output_connections, self.input_connections, 0)
 
+        # rx data
         for connection in readable:
             try:
+                # save received data
                 data = connection.recv(8192)
                 self.incoming_queue.put_nowait(data)
-                # TODO: Add Callback Function for receiving data
+
             except (ConnectionResetError, ConnectionAbortedError, InterruptedError):
                 print("Connection lost")
                 self.output_connections.remove(connection)
@@ -64,13 +83,7 @@ class Socket:
                 self.state = SocketState.NOT_CONNECTED
                 return
 
-        #     # else:
-        #     #     self.print("Connection lost")
-        #     #     self.outputs.remove(connection)
-        #     #     self.inputs.remove(connection)
-        #     #     connection.close()
-        #     #     self.state = SocketState.NOT_CONNECTED
-        #
+        # tx data
         for connection in writable:
             while self.outgoing_queue.qsize() > 0:
                 data = self.outgoing_queue.get_nowait()

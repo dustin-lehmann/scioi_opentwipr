@@ -1,10 +1,11 @@
 import threading
 
 
-from Communication.hw_layer import Socket
+from Communication.client import Socket
 from queue import Queue
+# files to receive Host-Server Ip
 from get_host_ip import GetHostIp, HostIpEvent
-from Communication.core_messages import translate_rx_message
+from Communication.client import client
 
 exit_comm = False
 exit_main = False
@@ -13,7 +14,7 @@ from time import sleep
 
 import cobs.cobs as cobs
 
-client = Socket("Client")
+
 client_incoming_queue = Queue()
 client_outgoing_queue = Queue()
 HOST_PORT = 6666
@@ -75,14 +76,15 @@ def main():
 
 
     while 1:
-        if client_incoming_queue.qsize()>0:
-            print("incoming queue:")
-            incoming_bytestring = client_incoming_queue.get_nowait()
-            print(incoming_bytestring)
-            translated_message= translate_rx_message(incoming_bytestring)
-            print(translated_message)
-        # client_outgoing_queue.put_nowait(buffer)
+        # if client_incoming_queue.qsize()>0:
+        #     print("incoming queue:")
+        #     incoming_bytestring = client_incoming_queue.get_nowait()
+        #     print(incoming_bytestring)
+        #     # translated_message= translate_rx_message(incoming_bytestring)
+        #     # print(translated_message)
+        client_outgoing_queue.put_nowait(buffer)
         sleep(0.6) #todo: not possible to send much data
+
 
 
 

@@ -12,7 +12,7 @@
 from PyQt5.QtCore import pyqtSignal
 # ---------------------------------------------------------------------------
 # Imports
-from Communication.core_communication.core_messages import BaseMessage  # todo: import needed here?
+from Communication.layer_core_communication.core_messages import BaseMessage  # todo: import needed here?
 
 
 # ---------------------------------------------------------------------------

@@ -1,4 +1,4 @@
-from Communication.hardware_layer import host_server
+from Communication import host_server
 
 
 class UserIO:

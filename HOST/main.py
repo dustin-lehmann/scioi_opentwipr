@@ -2,14 +2,16 @@ import sys
 import threading
 from PyQt5.QtWidgets import QApplication
 
-from Communication.hardware_layer import host_server
-from Communication.core_communication import core_messages
-from Communication.protocol_layer.protocol_layer import ProtocolLayer
+from Communication import host_server
+from Communication.layer_core_communication import core_messages
+from Communication.protocol_layer import ProtocolLayer
+from Communication.message_layer import MessageLayer
+
 
 import time
 
 
-def test_function():
+def example_host():
     while 1:
         pass
         if len(host_server.host.clients) < 1:
@@ -40,7 +42,10 @@ def main():
     # Protocol Layer
     protocol_layer = ProtocolLayer(host_server.host)
 
-    test_thread = threading.Thread(target=test_function)
+    # Message Layer
+    message_layer = MessageLayer
+
+    test_thread = threading.Thread(target=example_host)
     test_thread.start()
 
     sys.exit(app.exec())

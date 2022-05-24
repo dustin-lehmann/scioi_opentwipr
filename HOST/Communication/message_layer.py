@@ -31,8 +31,8 @@ class MessageLayer:
         self.host_server = host_server
 
         # start ML receive thread
-        pl_rx_thread = threading.Thread(target=self._ml_rx_thread)
-        pl_rx_thread.start()
+        ml_rx_thread = threading.Thread(target=self._ml_rx_thread)
+        ml_rx_thread.start()
 
     def _ml_rx_thread(self):
         """
@@ -40,7 +40,7 @@ class MessageLayer:
         """
         while True:
             for client in self.host_server.clients:
-                ml_rx_handling(client.rx_queue, client.pl_ml_rx_queue)
+                ml_rx_handling(client.pl_ml_rx_queue, debug = True)
 
 
 

@@ -53,9 +53,3 @@ class ProtocolLayer:
         while True:
             for client in self.host_server.clients:
                 pl_rx_handling(client.rx_queue, client.pl_ml_rx_queue)
-
-
-
-
-
-

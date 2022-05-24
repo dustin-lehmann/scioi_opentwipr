@@ -41,6 +41,7 @@ from Communication.broadcast_host_ip import HostIp, BroadcastIpUDP
 
 from Communication.g_code.gcode_parser import gcode_parser
 from layer_core_communication.hl_core_communication import hl_rx_handling, hl_tx_handling
+from layer_core_communication.pl_core_communication import pl_translate_msg_tx
 
 
 # ---------------------------------------------------------------------------
@@ -157,7 +158,7 @@ class HostServer(QObject):
         """
         while True:
             for client in self.clients:
-                hl_tx_handling(client.tx_queue, client.socket)
+                hl_tx_handling(client.tx_queue, client.socket, debug = True)
 
 
     def start(self):
@@ -225,6 +226,7 @@ class HostServer(QObject):
         - todo: this method is just for the use of an interface, when the message layer is defined this function hast to be modified as well!
         - send a message to selected clients
         - it is possible to select a single client, a list of clients, all at once, or a client via its name (string)
+        - -> Terminal function
         :param msg: message that has to be sent
         :param client: which client(s) are supposed to receive the message
         :return: nothing
@@ -234,7 +236,7 @@ class HostServer(QObject):
         # if isinstance(msg, list): #todo: implement a way to send multiple messages at once -> even needed?
         #     buffer = bytes(buffer)
 
-        buffer = Communication.core_communication.protocol_layer_core_communication.pl_translate_msg_tx(msg)
+        buffer = pl_translate_msg_tx(msg)
 
         # only one client
         if isinstance(client, Client):
@@ -263,7 +265,7 @@ class HostServer(QObject):
 
     def process_user_input_gcode(self, input_text, write_to_terminal=False, recipient="All"):
         """
-        processing of the user input (GCODE) that is sent via the user_input_signal
+        processing of the user input (GCODE) that is sent via the user_input_signal -> Terminal function
         :param input_text: input text
         :param write_to_terminal: Determines if the processing of the message is going to be displayed on terminal
         :param recipient: Determines the client the message is for, Default ="All"
@@ -289,7 +291,7 @@ class HostServer(QObject):
 
     def send_message_from_input(self, msg, write_to_terminal, line_text, recipient):
         """
-        send a message from the main terminal by emitting a Signal that is sent to the HostServer
+        send a message from the main terminal by emitting a Signal that is sent to the HostServer -> Terminal function
         :param msg: output of the gcode parser
         :param write_to_terminal:
         :param line_text: line text before gcode parsing
@@ -337,7 +339,7 @@ class HostServer(QObject):
 
     def invalid_gcode(self, user_input: str) -> None:
         """
-        print 'invalid GCODE' to console
+        print 'invalid GCODE' to console -> Terminal function
         :param user_input:
         :return:
         """
@@ -345,7 +347,7 @@ class HostServer(QObject):
         print("invalid GCODE")
 
     def execute_internal_call(self, cmd_list: List[Dict[str, Any]], write_to_terminal: bool, line_text: str) -> None:
-        # the cmd list comprises dictionaries containing a g-code and its arguments respectively
+        # the cmd list comprises dictionaries containing a g-code and its arguments respectively -> Terminal function
         for gcode in cmd_list:
             if gcode['type'] == 'M61':
                 print("internal call function called (Debug message)")
@@ -374,13 +376,7 @@ class HostServer(QObject):
         num = client.socket.bytesAvailable()
         # get all available bytes
         data = client.socket.read(num)
-        # debug_print_rx_byte(client.ip, data)
-        # bytes_list = hw_layer_process_data_rx(data)
-        #
-        # if isinstance(bytes_list, list):
-        #     # loop through list put every msg-element in queue separately
-        #     for index in range(len(bytes_list)):
-        #         client.rx_queue.put_nowait(bytes_list[index])
+
         hl_rx_handling(data, client.rx_queue)
 
 

@@ -14,6 +14,7 @@ import select
 import socket
 from queue import Queue
 import threading
+import time
 
 # ---------------------------------------------------------------------------
 # Imports
@@ -46,25 +47,35 @@ class Socket:
         # Event used to share the Host-Ip between the two threads
         self.host_ip_event = HostIpEvent()
 
-        self.tx_queue = Queue()
-        self.rx_queue = Queue()
+        self.hl_tx_queue = Queue()
+        self.hl_rx_queue = Queue()
         self.pl_ml_tx_queue = Queue()
         self.pl_ml_rx_queue = Queue()
 
     def start(self):
+        #todo: could this here be the problem?
+        # tries to send stuff even it when it is not connected
 
         # start the thread that receives the IP from the Host
         get_ip_thread = threading.Thread(target=GetHostIp, args=(self.host_ip_event,), daemon=True)
         get_ip_thread.start()
 
-        # start transmit thread
-        client_tx_thread = threading.Thread(target=self._tx_thread)
-        client_tx_thread.start()
-
         # start communication thread
         client_comm_thread = threading.Thread(target=self._comm_thread)
         client_comm_thread.start()
 
+        # wait until socket is connected to start tx/ rx thread
+        while True:
+            if self.state == SocketState(1):
+                print("starting threads")
+
+                # start transmit thread
+                client_tx_thread = threading.Thread(target=self._tx_thread)
+                client_tx_thread.start()
+
+                break
+
+            time.sleep(0.1)
 
     def _tx_thread(self):
         """
@@ -73,8 +84,10 @@ class Socket:
         - check each queue and put data from there into the socket, flush to send data via socket
         :return: nothing
         """
+        print("tx started")
         while True:
-            hl_tx_handling(self.tx_queue, self.sock)
+            hl_tx_handling(self.hl_tx_queue, self.sock)
+            time.sleep(0.01)
 
     def _comm_thread(self):
         """
@@ -115,7 +128,7 @@ class Socket:
                 # save received data
                 data = connection.recv(8192)
                 # self.incoming_queue.put_nowait(data)
-                hl_rx_handling(data, self.rx_queue, False)
+                hl_rx_handling(data, self.hl_rx_queue, False)
 
             except (ConnectionResetError, ConnectionAbortedError, InterruptedError):
                 print("Connection lost")
@@ -127,7 +140,7 @@ class Socket:
 
         # tx data
         for connection in writable:
-            hl_tx_handling(self.tx_queue, connection)
+            hl_tx_handling(self.hl_tx_queue, connection)
 
         for connection in exceptional:
             print("Server exception with " + connection.getpeername())
@@ -135,12 +148,6 @@ class Socket:
             if connection in self.output_connections:
                 self.output_connections.remove(connection)
             connection.close()
-
-    def _send(self, data):  # TODO: Check if this is thread safe!
-        assert (isinstance(data, (list, bytearray, bytes)))
-        if isinstance(data, list):
-            data = bytes(data)
-        self.tx_queue.put_nowait(data)
 
     def _connect(self, server_address=None, server_port=None):
         """

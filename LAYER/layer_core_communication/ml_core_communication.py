@@ -51,5 +51,5 @@ def _debug_print_rx_message():
     :return: nothing
     """
     time = datetime.now().strftime("%H:%M:%S:")
-    string = "{}: ML: raw Message received!".format(time)
+    string = "{}: ML: raw Message received!\n".format(time)
     print(string)

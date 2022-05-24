@@ -103,33 +103,45 @@ def cobs_encode_tx(bytestring: bytes, cobs_encode=True):
     return bytestring
 
 
-def hl_tx_handling(tx_queue: Queue(), Socket: Union[QTcpSocket, socket], cobs_encode: bool = True,
+def hl_tx_handling(hl_tx_queue: Queue(), Socket: Union[QTcpSocket, socket], cobs_encode: bool = True,
                    debug: bool = False):
     """
     - handling of transmitting messages from hardware layer
     - host and client use different kinds of sockets, thats why argument is passed as Union
-    :param tx_queue: queue to get message(s) for transmitting
+    :param hl_tx_queue: queue to get message(s) for transmitting
     :param Socket: socket that is used
     :param debug: if true print to console when message is sent
     :return: return
     """
     # check if there is any data in queue waiting to be sent
-    while tx_queue.qsize() > 0:
-        data = tx_queue.get_nowait()
-        if cobs_encode:
-            data = cobs_encode_tx(data)
-        # Host-Server
+    while hl_tx_queue.qsize() > 0:
+        # Host Server
         if isinstance(Socket, QTcpSocket):
+            data = hl_tx_queue.get_nowait()
+            if cobs_encode:
+                data = cobs_encode_tx(data)
             # write to socket
             Socket.write(data)
             # send the data by using flush
             Socket.flush()
-        # Client
-        if isinstance(Socket, socket):
+
+        # ComModule -> there seems to be some issue with get_nowait() for the CM -> rather do get
+        elif isinstance(Socket, socket):
+            data = hl_tx_queue.get(timeout=None)
+            if cobs_encode:
+                data = cobs_encode_tx(data)
             Socket.send(data)
 
-        if debug:
-            _debug_print_tx_data()
+        else:
+            raise TypeError
+            return
+
+        time = datetime.now().strftime("%H:%M:%S:")
+        string = "{}: HL: sending Message!\n".format(time)
+        print(string)
+
+
+
 
 
 def hl_rx_handling(data, rx_queue: Queue, print_to_console=False):

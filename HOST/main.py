@@ -44,10 +44,10 @@ def main():
     protocol_layer = ProtocolLayer(host_server.host)
 
     # Message Layer
-    message_layer = MessageLayer
+    message_layer = MessageLayer(host_server.host)
 
-    demo_thread = threading.Thread(target=example_host)
-    demo_thread.start()
+    demo_thread_host = threading.Thread(target=example_host)
+    demo_thread_host.start()
 
     sys.exit(app.exec())
 

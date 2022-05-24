@@ -17,7 +17,7 @@ import threading
 # Imports 
 # ---------------------------------------------------------------------------
 from Communication.host_server import HostServer
-from Communication.layer_core_communication.pl_core_communication import pl_tx_handling, pl_rx_handling
+from layer_core_communication.pl_core_communication import pl_tx_handling, pl_rx_handling
 
 
 class ProtocolLayer:

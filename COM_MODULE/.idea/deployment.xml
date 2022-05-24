@@ -5,7 +5,8 @@
       <paths name="pi@com4-test:22 (2)">
         <serverdata>
           <mappings>
-            <mapping deploy="/pi" local="$PROJECT_DIR$" web="/" />
+            <mapping deploy="/pi/COM_MODULE" local="$PROJECT_DIR$" web="/" />
+            <mapping deploy="/pi/LAYER" local="$PROJECT_DIR$/../LAYER" web="/" />
           </mappings>
         </serverdata>
       </paths>

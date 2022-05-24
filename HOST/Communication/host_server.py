@@ -35,13 +35,12 @@ import queue
 # Imports
 
 # Setting and Broadcasting Host-Ip
-import Communication.layer_core_communication.pl_core_communication
 from Communication.broadcast_host_ip import HostIp, BroadcastIpUDP
 
 # Robot User-Interface
 
 from Communication.g_code.gcode_parser import gcode_parser
-from Communication.layer_core_communication.hw_layer_core_communication import hl_rx_handling, hl_tx_handling
+from layer_core_communication.hl_core_communication import hl_rx_handling, hl_tx_handling
 
 
 # ---------------------------------------------------------------------------
@@ -53,7 +52,6 @@ class Client:
     -each client has their own receive/ transmit queue that is constantly checked by a thread each
     """
     rx_queue: queue.Queue
-    hl_pl_rx_queue: queue.Queue
     tx_queue: queue.Queue
     pl_ml_tx_queue = queue.Queue
     pl_ml_rx_queue = queue.Queue
@@ -141,9 +139,6 @@ class HostServer(QObject):
         client_tx_thread = threading.Thread(target=self._tx_thread)
         client_tx_thread.start()
 
-        # start receive thread
-        # client_rx_thread = threading.Thread(target=self._rx_thread)
-        # client_rx_thread.start()
 
     def run(self):
         """
@@ -162,12 +157,6 @@ class HostServer(QObject):
         """
         while True:
             for client in self.clients:
-                # # check if there is any data in queue waiting to be sent
-                # while client.tx_queue.qsize() > 0:
-                #     # write data from queue in socket
-                #     client.socket.write(client.tx_queue.get_nowait())
-                #     # send the data by using flush
-                #     client.socket.flush()
                 hl_tx_handling(client.tx_queue, client.socket)
 
 

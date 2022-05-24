@@ -4,6 +4,7 @@
     <content url="file://$MODULE_DIR$" />
     <orderEntry type="jdk" jdkName="Remote Python 3.9.2 (sftp://pi@com4-test:22/usr/bin/python3)" jdkType="Python SDK" />
     <orderEntry type="sourceFolder" forTests="false" />
+    <orderEntry type="module" module-name="LAYER" />
   </component>
   <component name="PackageRequirementsSettings">
     <option name="requirementsPath" value="" />

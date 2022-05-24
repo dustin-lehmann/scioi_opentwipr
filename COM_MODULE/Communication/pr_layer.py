@@ -17,7 +17,7 @@ import threading
 # Imports 
 # ---------------------------------------------------------------------------
 from Communication.client import client, Socket
-from Communication.layer_core_communication.pl_core_communication import pl_tx_handling, pl_rx_handling
+from layer_core_communication.pl_core_communication import pl_tx_handling, pl_rx_handling
 
 
 class ProtocolLayer:
@@ -28,7 +28,7 @@ class ProtocolLayer:
     def __init__(self, client: Socket):
         # variable to start protocol layer #todo
         self.pl_start = False
-        self.host_server = client
+        self.client = client
 
         # start PL transmit thread
         pl_tx_thread = threading.Thread(target=self._pl_tx_thread)

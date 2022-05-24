@@ -88,46 +88,58 @@ def _hw_layer_chop_bytes_rx(bytestring, delimiter=0x00):
     return chopped_bytes
 
 
-def hw_layer_put_bytes_in_queue_tx(bytestring: bytes, cobs_encode=True):
+def cobs_encode_tx(bytestring: bytes, cobs_encode=True):
     """
-    take in byte-string, encode and put in the outgoing queue to be sent
+    take in byte-string, encode and return
     :param bytestring: bytestring that is supposed to be sent later
     :param cobs_encode: if true -> encode data before sending
     :return: nothing
     """
-    if cobs_encode:
-        # encode via cobs
-        bytestring = cobs.encode(bytestring)
-        # add 0x00 byte, that signals the end of the message for the recipient
-        bytestring = bytestring.__add__(b'\x00')
-        return bytestring
-    else:
-        return bytestring
+
+    # encode via cobs
+    bytestring = cobs.encode(bytestring)
+    # add 0x00 byte, that signals the end of the message for the recipient
+    bytestring = bytestring.__add__(b'\x00')
+    return bytestring
 
 
-def hl_tx_handling(tx_queue: Queue(), Socket: Union[QTcpSocket, socket]):
+def hl_tx_handling(tx_queue: Queue(), Socket: Union[QTcpSocket, socket], cobs_encode: bool = True,
+                   debug: bool = False):
     """
     - handling of transmitting messages from hardware layer
     - host and client use different kinds of sockets, thats why argument is passed as Union
     :param tx_queue: queue to get message(s) for transmitting
     :param Socket: socket that is used
+    :param debug: if true print to console when message is sent
     :return: return
     """
     # check if there is any data in queue waiting to be sent
     while tx_queue.qsize() > 0:
+        data = tx_queue.get_nowait()
+        if cobs_encode:
+            data = cobs_encode_tx(data)
         # Host-Server
         if isinstance(Socket, QTcpSocket):
-            # write data from queue in socket
-            Socket.write(tx_queue.get_nowait())
+            # write to socket
+            Socket.write(data)
             # send the data by using flush
             Socket.flush()
         # Client
         if isinstance(Socket, socket):
-            data = tx_queue.get_nowait()
             Socket.send(data)
 
+        if debug:
+            _debug_print_tx_data()
 
-def hl_rx_handling(data, rx_queue: Queue, print_to_console = False):
+
+def hl_rx_handling(data, rx_queue: Queue, print_to_console=False):
+    """
+    handle incoming data by processing data and putting it into the queue for the PL
+    :param data: received data
+    :param rx_queue: queue that connects to the PL
+    :param print_to_console: if true, print the incoming data to the console (debugging only)
+    :return: nothing
+    """
     if print_to_console:
         _debug_print_rx_byte(data)
     bytes_list = hw_layer_process_data_rx(data)
@@ -140,7 +152,7 @@ def hl_rx_handling(data, rx_queue: Queue, print_to_console = False):
 
 def _debug_print_rx_byte(client_data, client_ip=None, pos=False):
     """
-    handle the incoming data from the client, by adding information like time/ ip to each incoming message
+    print incoming data to console (used for debugging onl)
     :param pos: if true, add number of each byte, which makes debugging easier
     :param client_ip: ip of client
     :param client_data: data that has been sent
@@ -155,4 +167,14 @@ def _debug_print_rx_byte(client_data, client_ip=None, pos=False):
         string = "{}: {}".format(time, client_data)
     else:
         string = "{} from {}: {}".format(time, client_ip, client_data)
+    print(string)
+
+
+def _debug_print_tx_data():
+    """
+    print timestamp once data is sent at the HL (used for debugging only)
+    :return: nothing
+    """
+    time = datetime.now().strftime("%H:%M:%S:")
+    string = "{}: HL: Data sent!".format(time)
     print(string)

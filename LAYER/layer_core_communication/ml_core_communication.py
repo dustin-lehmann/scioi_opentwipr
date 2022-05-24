@@ -11,12 +11,14 @@ this module contains the functions used for protocol_layer_core communication
 """
 # ---------------------------------------------------------------------------
 # Module Imports
+from datetime import datetime
 # ---------------------------------------------------------------------------
 # ---------------------------------------------------------------------------
 # Imports
 # ---------------------------------------------------------------------------
+
 from queue import Queue
-from Communication.layer_core_communication import core_messages
+from layer_core_communication import core_messages
 
 
 def ml_tx_handling(pl_ml_tx_queue: Queue(), msg: core_messages.BaseMessage):
@@ -31,13 +33,23 @@ def ml_tx_handling(pl_ml_tx_queue: Queue(), msg: core_messages.BaseMessage):
     pl_ml_tx_queue.put_nowait(msg)
 
 
-def ml_rx_handling(rx_queue: Queue()):
+def ml_rx_handling(rx_queue: Queue(), debug: bool = False):
     """
     - Routine for checking the rx queue, if size is not 0, do sth
-    :param rx_queue: rx queue harware-/protocol-layer
-    :param pl_ml_rx_queue: rx queue protocol-/ message-layer
+    :param rx_queue: rx queue message-layer
     :return: nothing
     """
     while rx_queue.qsize() > 0:
         rx_queue.get_nowait()
-        print("raw message received")
+        if debug:
+            _debug_print_rx_message()
+
+
+def _debug_print_rx_message():
+    """
+    print timestamp once raw message is received at the ML (used for debugging only)
+    :return: nothing
+    """
+    time = datetime.now().strftime("%H:%M:%S:")
+    string = "{}: ML: raw Message received!".format(time)
+    print(string)

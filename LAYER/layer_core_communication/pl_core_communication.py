@@ -16,7 +16,7 @@ this module contains the functions used for protocol_layer_core communication
 # Imports 
 # ---------------------------------------------------------------------------
 from queue import Queue
-from Communication.layer_core_communication.core_messages import BASE_MESSAGE_SIZE
+from layer_core_communication.core_messages import BASE_MESSAGE_SIZE
 from cobs import cobs as cobs
 from dataclasses import dataclass
 from typing import Union
@@ -25,9 +25,9 @@ import unittest
 # valid range of message parameters
 _HEADER_VALUE = [0xAA]
 _SRC_RANGE = [0, 255]
-_ADD0_RANGE = [0, 0]
-_ADD1_RANGE = [0, 0]
-_CMD_RANGE = [1, 6]
+_ADD0_RANGE = [0, 255]
+_ADD1_RANGE = [0, 255]
+_CMD_RANGE = [0, 255]
 
 
 @dataclass(frozen=True)
@@ -100,13 +100,14 @@ def _check_raw_msg_rx(msg: _RawMessage):
     if not _CMD_RANGE[0] <= msg.cmd <= _CMD_RANGE[1]:
         print("CMD not in expected range, can not create raw_msg!")
         return False
-    if not msg.len == len(msg.data):  # todo: did I get this right? or should I just look for the overhead?
-        print("length byte of message incorrect, can not create raw_msg!")
+    # todo: len-check
+    # if not msg.len == len(msg.data):  # todo: did I get this right? or should I just look for the overhead?
+    #     print("length byte of message incorrect, can not create raw_msg!")
     # todo: crc8-check!
     return True
 
 
-def pl_translate_msg_tx(msg, cobs_encode = True):
+def pl_translate_msg_tx(msg, cobs_encode = False):
     """
     - this message builder creates a buffer from a given Message so it can be sent
     :param msg: msg that is supposed to be translated

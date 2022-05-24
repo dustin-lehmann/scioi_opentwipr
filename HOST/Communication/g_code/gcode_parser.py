@@ -2,7 +2,7 @@ from Communication.g_code.messages import *
 from Communication.g_code.data import *
 import re
 from typing import List, Dict, Any
-from Communication.layer_core_communication.core_messages import * #TODO: remove since this is just for testing!!
+from layer_core_communication.core_messages import * #TODO: remove since this is just for testing!!
 
 
 class GCODEParser:

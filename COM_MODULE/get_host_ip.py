@@ -15,6 +15,7 @@ from threading import Event
 # Imports
 # ---------------------------------------------------------------------------
 
+
 class HostIpEvent(Event):
     """
     Custom Event that is used to share the HostIp between threads
@@ -22,6 +23,7 @@ class HostIpEvent(Event):
     def __init__(self):
         super().__init__()
         self.received_host_address = None
+
 
 class GetHostIp:
     def __init__(self, host_ip_event: HostIpEvent):
@@ -33,6 +35,7 @@ class GetHostIp:
         receive host-ip via UDP
         :return: ip-Address of host to establish connection
         """
+        print("Trying to receive Host-Ip")
         # loop until Host-address has been received
         while self.host_ip_event.received_host_address is None:
             client = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)  # UDP

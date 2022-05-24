@@ -16,31 +16,39 @@ import threading
 # ---------------------------------------------------------------------------
 # Imports
 # ---------------------------------------------------------------------------
-from Communication.host_server import HostServer
 from layer_core_communication.ml_core_communication import ml_tx_handling, ml_rx_handling
+from Communication.client import Socket
+from layer_core_communication.core_messages import BaseMessage
 
 
 class MessageLayer:
     """
-    The protocol layer is the middleman between HL and ML, it translates the tx/rx queues so that data can be
-    exchanged between the two other layers
+    - The message layer is the third layer
+    - Responsible for:
+        - interpreting received messages (raw-msgs) from the PL
+        - create new Messages and send them to the PL
+
     """
-    def __init__(self, host_server: HostServer):
+    def __init__(self, client: Socket):
         # variable to start protocol layer #todo
         self.pl_start = False
-        self.host_server = host_server
+        self.client = client
 
-        # start ML receive thread
-        pl_rx_thread = threading.Thread(target=self._ml_rx_thread)
-        pl_rx_thread.start()
+        # start ML transmit thread
+        pl_tx_thread = threading.Thread(target=self._ml_rx_thread)
+        pl_tx_thread.start()
 
     def _ml_rx_thread(self):
         """
         function used by rx_thread to handle protocol layer rx
         """
         while True:
-            for client in self.host_server.clients:
-                ml_rx_handling(client.rx_queue, client.pl_ml_rx_queue)
+            ml_rx_handling(self.client.pl_ml_rx_queue, True)
+
+    def send_msg(self, msg: BaseMessage):
+        self.client.pl_ml_tx_queue.put_nowait(msg)
+
+
 
 
 

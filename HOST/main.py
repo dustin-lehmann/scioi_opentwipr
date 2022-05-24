@@ -3,9 +3,10 @@ import threading
 from PyQt5.QtWidgets import QApplication
 
 from Communication import host_server
-from Communication.layer_core_communication import core_messages
+from layer_core_communication import core_messages
 from Communication.protocol_layer import ProtocolLayer
 from Communication.message_layer import MessageLayer
+
 
 
 import time
@@ -45,8 +46,8 @@ def main():
     # Message Layer
     message_layer = MessageLayer
 
-    test_thread = threading.Thread(target=example_host)
-    test_thread.start()
+    demo_thread = threading.Thread(target=example_host)
+    demo_thread.start()
 
     sys.exit(app.exec())
 

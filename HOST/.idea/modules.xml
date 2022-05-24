@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="ProjectModuleManager">
+    <modules>
+      <module fileurl="file://$PROJECT_DIR$/.idea/HOST.iml" filepath="$PROJECT_DIR$/.idea/HOST.iml" />
+      <module fileurl="file://$PROJECT_DIR$/../LAYER/.idea/LAYER.iml" filepath="$PROJECT_DIR$/../LAYER/.idea/LAYER.iml" />
+    </modules>
+  </component>
+</project>
